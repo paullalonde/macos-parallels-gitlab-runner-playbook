@@ -1,0 +1,27 @@
+---
+
+- name: Check if Homebrew is already installed
+  stat:
+    path: /usr/local/bin/brew
+  register: brew
+
+- name: Download Homebrew installation script
+  get_url:
+    url: https://raw.githubusercontent.com/Homebrew/install/master/install.sh
+    dest: /tmp/install-homebrew.sh
+    mode: 0755
+  when: not brew.stat.exists
+
+- name: Install Homebrew
+  command:
+    argv:
+      - /tmp/install-homebrew.sh
+  environment:
+    CI: "1"
+  when: not brew.stat.exists
+
+- name: Delete Homebrew installation script
+  file:
+    dest: /tmp/install-homebrew.sh
+    state: absent
+  when: not brew.stat.exists

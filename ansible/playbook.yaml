@@ -1,6 +1,6 @@
 ---
 - hosts: all
-  become: true
+  # become: true
   tasks:
 
     # - name: Stop Gitlab Runner daemon
@@ -11,14 +11,24 @@
     - name: Disable Sleep
       import_tasks: tasks/no-sleep.yaml
 
-    # - name: Disable Software Updates
-    #   import_role:
-    #     name: disable-software-updates
-    #
-    # - name: Install Homebrew
-    #   import_role:
-    #     name: install-homebrew
-    #
+    - name: Disable Software Updates
+      import_role:
+        name: disable-software-updates
+
+    - name: Install Homebrew
+      import_role:
+        name: install-homebrew
+
+    - name: Install Pip Packages
+      become: true
+      ansible.builtin.pip:
+        name: "{{ item }}"
+      loop:
+        - python-gitlab==3.6.0
+
+    - name: Create Runner
+      import_tasks: tasks/runner.yaml
+
     # - name: Install Homebrew packages
     #   become: false
     #   community.general.homebrew:

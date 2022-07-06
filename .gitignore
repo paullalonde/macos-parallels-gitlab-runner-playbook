@@ -1,3 +1,4 @@
 .temp/
 venv/
 /.ansible-vault-pw
+.env

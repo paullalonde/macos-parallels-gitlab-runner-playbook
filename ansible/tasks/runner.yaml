@@ -1,0 +1,156 @@
+---
+
+- name: Gitlab runner group
+  become: true
+  group:
+    name: gitlab-runner
+
+- name: Gitlab runner user
+  become: true
+  user:
+    name: gitlab-runner
+    password: "{{ gitlab_runner_password }}"
+    comment: GitLab Runner
+    groups:
+      - gitlab-runner
+    hidden: false
+    shell: /bin/bash
+
+- name: Gitlab runner directories
+  become: true
+  file:
+    path: /Users/gitlab-runner/{{ item }}
+    state: directory
+    owner: gitlab-runner
+    group: gitlab-runner
+    mode: 'u=rwx,g=,o='
+  loop:
+    - bin
+    - builds
+    - caches
+    - conf
+    - work
+
+- name: Check if Gitlab Runner is already installed
+  become: true
+  stat:
+    path: /Users/gitlab-runner/bin/gitlab-runner
+  register: gitlab_runner
+
+- name: Call Gitlab Runner version
+  become: true
+  command:
+    cmd: /Users/gitlab-runner/bin/gitlab-runner --version
+  when: gitlab_runner.stat.exists
+  register: current_runner_version_reg
+  changed_when: false
+
+- name: Determine current Gitlab Runner version 1/2
+  set_fact:
+    current_runner_version_line: "{{ current_runner_version_reg.stdout | default('') | regex_search('Version:[\\s]+([0-9]+\\.[0-9]+\\.[0-9]+)') }}"
+
+- name: Determine current Gitlab Runner version 2/2
+  set_fact:
+    current_runner_version: "{{ current_runner_version_line | regex_replace('Version:[\\s]+([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | default('') }}"
+
+- name: Current current_runner_version
+  debug:
+    msg: "{{ current_runner_version }}"
+
+- name: Determine if we need to install/update runner
+  set_fact:
+    need_runner_install: "{{ current_runner_version != gitlab_runner_version }}"
+
+- name: Current need_runner_install
+  debug:
+    msg: "{{ need_runner_install }}"
+
+- name: Check if Gitlab Launch Daemon is already installed
+  stat:
+    path: /Library/LaunchDaemons/com.ticksmith.macos-gitlab-runner.plist
+  register: launch_daemon_plist
+
+- name: Do we need to stop the Gitlab runner service ?
+  set_fact:
+    need_runner_stop: "{{ launch_daemon_plist.stat.exists or need_runner_install }}"
+
+- name: Current need_runner_stop
+  debug:
+    msg: "{{ need_runner_stop }}"
+
+- name: Stop Gitlab Runner
+  community.general.launchd:
+    name: com.ticksmith.macos-gitlab-runner
+    state: stopped
+  when: need_runner_stop
+
+- name: Install Gitlab Runner {{ gitlab_runner_version }}
+  become: true
+  get_url:
+    url: https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/binaries/gitlab-runner-darwin-amd64
+    dest: /Users/gitlab-runner/bin/gitlab-runner
+    checksum: "sha256:{{ gitlab_runner_hash }}"
+    owner: gitlab-runner
+    group: gitlab-runner
+    mode: 'u=rwx,g=rx,o=rx'
+  when: need_runner_install
+
+- name: Check if Gitlab Runner is already registered
+  become: true
+  stat:
+    path: /Users/gitlab-runner/conf/registration.json
+  register: runner_registration_file
+
+- name: Do we need to register the Gitlab runner ?
+  set_fact:
+    need_runner_registration: "{{ not runner_registration_file.stat.exists }}"
+
+- name: Current need_runner_registration
+  debug:
+    msg: "{{ need_runner_registration }}"
+
+# - name: Register Gitlab Runner
+#   uri:
+#     url: https://gitlab.com/api/v4/runners
+#     method: POST
+#     body_format: json
+#     body:
+#       token: "{{ gitlab_runner_registration_token }}"
+#       description: "{{ gitlab_runner_description }}"
+#       info:
+#         version: "{{ gitlab_runner_version }}"
+#         platform: "{{ hostvars[inventory_hostname].ansible_distribution }}"
+#         architecture: "{{ hostvars[inventory_hostname].ansible_architecture }}"
+#       active: true
+#       locked: false
+#       tag_list: ticksmith-macos
+#       run_untagged: false
+#     status_code: 201
+#     dest: /Users/gitlab-runner/conf/registration.json
+#     owner: gitlab-runner
+#     group: gitlab-runner
+#     mode: 'u=rw,g=,o='
+#   when: need_runner_registration
+
+- name: Register Gitlab Runner
+  gitlab_runner:
+    description: "{{ gitlab_runner_description }}"
+    api_token: "{{ item.access_token | trim }}"
+    registration_token: "{{ item.registration_token | trim }}"
+    project: "{{ item.name }}"
+    access_level: not_protected
+    api_url: https://gitlab.com/
+    state: present
+    active: true
+    tag_list:
+      - ticksmith-macos
+    run_untagged: false
+    locked: false
+  loop: "{{ gitlab_macos_projects }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: runner_registration
+
+- name: Current runner_registration
+  debug:
+    msg: "{{ runner_registration }}"

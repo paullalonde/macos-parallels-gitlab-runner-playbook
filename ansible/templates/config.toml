@@ -1,0 +1,27 @@
+# macOS Gitlab Runner configuration.
+
+# Global
+concurrent = 1
+check_interval = 60
+log_level = "warn"
+
+[session_server]
+  session_timeout = 1800
+
+[[runners]]
+  name = "{{ gitlab_executor_name }}"
+  url = "{{ gitlab_runner_registration_url }}"
+  token = "{{ gitlab_runner_token }}"
+  builds_dir = "/Users/gitlab-runner/builds"
+  cache_dir = "/Users/gitlab-runner/caches"
+  executor = "shell"
+  # executor = "virtualbox"
+
+  # [runners.ssh]
+  #   user = "gitlab-executor"
+  #   identity_file = "/Users/gitlab-runner/.ssh/gitlab-executor"
+  # [runners.virtualbox]
+  #   base_name = "{{ gitlab_executor_vm_name }}"
+  #   base_snapshot = "{{ gitlab_executor_vm_snapshot_name }}"
+  #   # base_folder = ""
+  #   disable_snapshots = false

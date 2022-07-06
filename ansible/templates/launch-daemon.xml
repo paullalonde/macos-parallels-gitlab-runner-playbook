@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <!-- <key>SessionCreate</key><true/> -->
+    <key>KeepAlive</key>
+    <dict>
+      <key>SuccessfulExit</key>
+      <false/>
+    </dict>
+    <key>RunAtLoad</key><true/>
+    <key>Disabled</key><false/>
+    <key>Label</key>
+    <string>com.ticksmith.macos-gitlab-runner</string>
+    <key>UserName</key>
+    <string>gitlab-runner</string>
+    <key>GroupName</key>
+    <string>gitlab-runner</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/gitlab-runner/bin/gitlab-runner</string>
+      <string>run</string>
+      <string>--working-directory</string>
+      <string>/Users/gitlab-runner/work</string>
+      <string>--config</string>
+      <string>/Users/gitlab-runner/conf/config.toml</string>
+      <string>--service</string>
+      <string>gitlab-runner</string>
+      <string>--syslog</string>
+      <string>--debug</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>PATH</key>
+      <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+  </dict>
+</plist>

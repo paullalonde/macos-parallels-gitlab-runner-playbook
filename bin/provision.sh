@@ -93,17 +93,22 @@ ANSIBLE_DIR="${BASE_DIR}/ansible"
 # ANSIBLE_RUNNER_SSH_PRIVATE_KEY_PLAINTEXT="${ANSIBLE_RUNNER_HOST_DIR}/.runner-ssh-key"
 
 VAULT_PASSWORD_PATH="${TEMP_DIR}/.ansible-vault-pw"
+# trap "{ rm -f ${VAULT_PASSWORD_PATH}; }" EXIT
 
-# trap "{ rm -f ${VAULT_PASSWORD_PATH} ${ANSIBLE_BOOTSTRAP_SSH_PRIVATE_KEY_PLAINTEXT} ${ANSIBLE_RUNNER_SSH_PRIVATE_KEY_PLAINTEXT}; }" EXIT
+if [[ -f "${BASE_DIR}/.env" ]]; then
+  source "${BASE_DIR}/.env"
+fi
 
-echo "Decrypting secrets ..."
+jq --null-input -r 'env.VAULT_PASSWORD' >"${VAULT_PASSWORD_PATH}"
 
-rm -f "${VAULT_PASSWORD_PATH}"
-touch "${VAULT_PASSWORD_PATH}"
-chmod 600 "${VAULT_PASSWORD_PATH}"
-security find-generic-password -s "${HOST_SERVICE}" -g 2>&1 >/dev/null \
-  | sed 's/^password: "\([^"]*\)"/\1/' \
-    >>"${VAULT_PASSWORD_PATH}"
+# echo "Decrypting secrets ..."
+#
+# rm -f "${VAULT_PASSWORD_PATH}"
+# touch "${VAULT_PASSWORD_PATH}"
+# chmod 600 "${VAULT_PASSWORD_PATH}"
+# security find-generic-password -s "${HOST_SERVICE}" -g 2>&1 >/dev/null \
+#   | sed 's/^password: "\([^"]*\)"/\1/' \
+#     >>"${VAULT_PASSWORD_PATH}"
 
 # rm -f "${ANSIBLE_BOOTSTRAP_SSH_PRIVATE_KEY_PLAINTEXT}"
 # touch "${ANSIBLE_BOOTSTRAP_SSH_PRIVATE_KEY_PLAINTEXT}"
@@ -140,7 +145,7 @@ security find-generic-password -s "${HOST_SERVICE}" -g 2>&1 >/dev/null \
 # ssh -i "${ANSIBLE_BOOTSTRAP_SSH_PRIVATE_KEY_PLAINTEXT}" "${ANSIBLE_USER}@${HOST}" "rm /tmp/install-xcode.sh"
 #
 # exit 44
-#
+
 pushd "${ANSIBLE_DIR}" >/dev/null
 
 ansible-playbook \
