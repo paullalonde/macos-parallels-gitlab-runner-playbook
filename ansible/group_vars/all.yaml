@@ -1,0 +1,43 @@
+---
+
+# ansible_user: ansible
+# ansible_ssh_private_key_file: "files/hosts/{{ inventory_hostname }}/.ansible-ssh-key"
+# ansible_python_interpreter: /usr/bin/python3
+#
+# install_vpn: false
+#
+# command_line_tools_url: '<REPLACE-ME>'
+#
+# gitlab_runner_restart_delay: 53
+#
+# gitlab_runner_version: "13.8.0"
+# gitlab_runner_hash: c28b7d8101e7d7990bfc15ce3d3e4fa269cedcb5a4a7410c833c6777c5fce616 # See https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/index.html
+# gitlab_runner_description: '<REPLACE-ME>'
+# gitlab_runner_registration_url: https://gonebig.com/gitlab/
+# gitlab_runner_registration_token: !vault |
+#   $ANSIBLE_VAULT;1.1;AES256
+#   31323665316165326239313030383561386430306537393963346464313237666136653532663532
+#   3038383366653435313761386433303832383462313733320a363832333162306339643332666535
+#   63636163383032653136663866313230393564643339643562373964356339333837653062333930
+#   3061333133333735340a383031613635636135396166383232376337383564326666333561666433
+#   38376134656438336533666335613732363035646639663666336535643036663937
+#
+# gitlab_executor_name: '<REPLACE-ME>'
+# gitlab_executor_user_password: '<REPLACE-ME>'
+# gitlab_executor_vm_name: macos-gitlab-executor
+# gitlab_executor_vm_snapshot_name: gitlab-executor-base
+#
+# gitlab_executor_golang_version: "1.16"
+# gitlab_executor_ginkgo_version: "1.15.2"
+# gitlab_executor_gomega_version: "1.11.0"
+# gitlab_executor_go_junit_report_version: "0.9.1"
+#
+# vagrant_box_name: macos-catalina
+# vagrant_box_url: '<REPLACE-ME>'
+# vagrant_box_version: "10.15.7"
+# vagrant_destroy_before_create: false
+# vagrant_vm_boot_timeout_secs: 1800
+# vagrant_vm_disk_size_gb: 80
+# vagrant_vm_memory_mb: 6144
+#
+# xcode_url: '<REPLACE-ME>'

@@ -1,0 +1,52 @@
+---
+- hosts: all
+  become: true
+  tasks:
+
+    # - name: Stop Gitlab Runner daemon
+    #   community.general.launchd:
+    #     name: com.ticksmith.macos-gitlab-runner
+    #     state: stopped
+
+    - name: Disable Sleep
+      import_tasks: tasks/no-sleep.yaml
+
+    # - name: Disable Software Updates
+    #   import_role:
+    #     name: disable-software-updates
+    #
+    # - name: Install Homebrew
+    #   import_role:
+    #     name: install-homebrew
+    #
+    # - name: Install Homebrew packages
+    #   become: false
+    #   community.general.homebrew:
+    #     name: "{{ item }}"
+    #   loop:
+    #     - jq
+    #     - python@3.9
+    #     - yq
+    #
+    # - name: Install Homebrew casks
+    #   become: false
+    #   community.general.homebrew_cask:
+    #     name: "{{ item }}"
+    #   loop:
+    #     - vagrant
+    #     - virtualbox
+    #     - virtualbox-extension-pack
+    #
+    # - name: Install VPN software
+    #   import_role:
+    #     name: install-vpn
+    #   when: install_vpn
+
+    # - name: Create GitLab Runner user and group
+    #   import_tasks: tasks/runner-user.yaml
+
+    # - name: Create GitLab Runner VM
+    #   import_tasks: tasks/runner-vm.yaml
+
+    # - name: Create GitLab Runner
+    #   import_tasks: tasks/runner.yaml

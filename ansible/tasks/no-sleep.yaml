@@ -1,0 +1,69 @@
+---
+
+- name: Disable computer sleep
+  block:
+    - name: Read computer sleep setting
+      command:
+        cmd: systemsetup -getcomputersleep
+      register: system_setup_get_computer_sleep
+      changed_when: false
+
+    - name: Is the computer configured to sleep?
+      set_fact:
+        computer_sleep_setting: "{{ system_setup_get_computer_sleep.stdout | regex_search('Never$') | default('') }}"
+
+    - name: Disable computer sleep
+      command:
+        cmd: systemsetup -setcomputersleep 0
+      when: computer_sleep_setting == ""
+
+- name: Restart the computer on power failure
+  block:
+    - name: Read restart on power failure setting
+      command:
+        cmd: systemsetup -getrestartpowerfailure
+      register: system_setup_get_restart_on_power_failure
+      changed_when: false
+
+    - name: Does the computer restart on power failure?
+      set_fact:
+        restart_on_power_failure_setting: "{{ system_setup_get_restart_on_power_failure.stdout | regex_search('On$') | default('') }}"
+
+    - name: Set the computer to restart on power failure
+      command:
+        cmd: systemsetup -setrestartpowerfailure on
+      when: restart_on_power_failure_setting == ""
+
+- name: Set the startup delay after a power failure
+  block:
+    - name: Read wait for startup after power failure setting
+      command:
+        cmd: systemsetup -getwaitforstartupafterpowerfailure
+      register: system_setup_get_wait_for_startup_after_power_failure
+      changed_when: false
+
+    - name: Do we need to change the startup delay after a power failure?
+      set_fact:
+        wait_for_startup_after_power_failure_setting: "{{ system_setup_get_restart_on_power_failure.stdout | regex_search((gitlab_runner_restart_delay|string) + ' seconds$') | default('') }}"
+
+    - name: Set the startup delay after a power failure
+      command:
+        cmd: systemsetup -setwaitforstartupafterpowerfailure {{ gitlab_runner_restart_delay }}
+      when: wait_for_startup_after_power_failure_setting == ""
+
+- name: Restart the computer on freeze
+  block:
+    - name: Read restart on freeze setting
+      command:
+        cmd: systemsetup -getrestartfreeze
+      register: system_setup_get_restart_on_freeze
+      changed_when: false
+
+    - name: Does the computer restart on freeze?
+      set_fact:
+        restart_on_freeze_setting: "{{ system_setup_get_restart_on_freeze.stdout | regex_search('On$') | default('') }}"
+
+    - name: Set the computer to restart on freeze
+      command:
+        cmd: systemsetup -setrestartfreeze on
+      when: restart_on_freeze_setting == ""

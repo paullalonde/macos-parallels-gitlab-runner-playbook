@@ -1,0 +1,8 @@
+---
+
+all:
+  children:
+    botte:
+      hosts:
+        # Paul's Mac Mini
+        botte.local: {}
