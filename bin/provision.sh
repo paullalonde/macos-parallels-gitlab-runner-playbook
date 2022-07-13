@@ -36,25 +36,26 @@ if [[ -f "${BASE_DIR}/.env" ]]; then
   source "${BASE_DIR}/.env"
 fi
 
-pushd "${BASE_DIR}" >/dev/null
+pushd "${BASE_DIR}/ansible" >/dev/null
 
-TEMP_DIR=.temp
+TEMP_DIR=../.temp
 mkdir -p "${TEMP_DIR}"
 
-VAULT_PASSWORD_GITLAB_PATH="${TEMP_DIR}/.ansible-vault-pw-gitlab"
+VAULT_PASSWORD_EXECUTOR_FILE="${TEMP_DIR}/.ansible-vault-pw-executor"
+VAULT_PASSWORD_GITLAB_FILE="${TEMP_DIR}/.ansible-vault-pw-gitlab"
 VAULT_PASSWORD_BOTTE_FILE="${TEMP_DIR}/.ansible-vault-pw-botte"
 VAULT_PASSWORD_MASKIROVKA_FILE="${TEMP_DIR}/.ansible-vault-pw-maski"
-# trap "{ rm -f ${VAULT_PASSWORD_GITLAB_FILE} ${VAULT_PASSWORD_BOTTE_FILE} ${VAULT_PASSWORD_MASKIROVKA_FILE}; }" EXIT
+trap "{ rm -f ${VAULT_PASSWORD_EXECUTOR_FILE} ${VAULT_PASSWORD_GITLAB_FILE} ${VAULT_PASSWORD_BOTTE_FILE} ${VAULT_PASSWORD_MASKIROVKA_FILE}; }" EXIT
 
 case "${HOST}" in
   botte)
-  VAULT_PASSWORD_PATH="${VAULT_PASSWORD_BOTTE_FILE}"
-  VAULT_PASSWORD="${VAULT_PASSWORD_BOTTE}"
+  echo "${VAULT_PASSWORD_BOTTE}" >"${VAULT_PASSWORD_BOTTE_FILE}"
+  VAULT_PASSWORD_FILE="${VAULT_PASSWORD_BOTTE_FILE}"
   ;;
 
   maskirovka)
-  VAULT_PASSWORD_PATH="${VAULT_PASSWORD_MASKIROVKA_FILE}"
-  VAULT_PASSWORD="${VAULT_PASSWORD_MASKIROVKA}"
+  echo "${VAULT_PASSWORD_MASKIROVKA}" >"${VAULT_PASSWORD_MASKIROVKA_FILE}"
+  VAULT_PASSWORD_FILE="${VAULT_PASSWORD_MASKIROVKA_FILE}"
   ;;
 
   *)
@@ -62,14 +63,15 @@ case "${HOST}" in
   exit 10
 esac
 
-echo "${VAULT_PASSWORD}" >"${VAULT_PASSWORD_PATH}"
-echo "${VAULT_PASSWORD_GITLAB}" >"${VAULT_PASSWORD_GITLAB_PATH}"
+echo "${VAULT_PASSWORD_EXECUTOR}" >"${VAULT_PASSWORD_EXECUTOR_FILE}"
+echo "${VAULT_PASSWORD_GITLAB}" >"${VAULT_PASSWORD_GITLAB_FILE}"
 
 ansible-playbook \
-  --vault-id "gitlab@${VAULT_PASSWORD_GITLAB_PATH}" \
-  --vault-id "${HOST}@${VAULT_PASSWORD_PATH}" \
-  --inventory=ansible/inventory.yaml \
+  --vault-id "executor@${VAULT_PASSWORD_EXECUTOR_FILE}" \
+  --vault-id "gitlab@${VAULT_PASSWORD_GITLAB_FILE}" \
+  --vault-id "${HOST}@${VAULT_PASSWORD_FILE}" \
+  --inventory=inventory.yaml \
   --limit "${HOST}" \
-  ansible/playbook.yaml
+  playbook.yaml
 
 popd >/dev/null

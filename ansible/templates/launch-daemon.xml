@@ -5,34 +5,36 @@
     <!-- <key>SessionCreate</key><true/> -->
     <key>KeepAlive</key>
     <dict>
-      <key>SuccessfulExit</key>
-      <false/>
+      <key>SuccessfulExit</key><true/>
     </dict>
     <key>RunAtLoad</key><true/>
     <key>Disabled</key><false/>
     <key>Label</key>
-    <string>com.ticksmith.macos-gitlab-runner</string>
+    <string>{{ runner_service_label }}</string>
     <key>UserName</key>
-    <string>gitlab-runner</string>
+    <string>{{ runner_user }}</string>
     <key>GroupName</key>
-    <string>gitlab-runner</string>
+    <string>{{ runner_user }}</string>
+    <key>Program</key>
+    <string>/Users/{{ runner_user }}/bin/gitlab-runner</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/Users/gitlab-runner/bin/gitlab-runner</string>
       <string>run</string>
       <string>--working-directory</string>
-      <string>/Users/gitlab-runner/work</string>
-      <string>--config</string>
-      <string>/Users/gitlab-runner/conf/config.toml</string>
-      <string>--service</string>
-      <string>gitlab-runner</string>
+      <string>/Users/{{ runner_user }}/work</string>
       <string>--syslog</string>
       <string>--debug</string>
     </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/{{ runner_user }}</string>
     <key>EnvironmentVariables</key>
     <dict>
       <key>PATH</key>
       <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
+    <!--
+    <key>ProcessType</key>
+    <string>Background</string>
+    -->
   </dict>
 </plist>

@@ -1,17 +1,17 @@
 ---
 
 - name: Gitlab runner user
+  become: true
   block:
     - name: Gitlab runner group
-      become: true
       group:
         name: "{{ runner_user }}"
 
     - name: Gitlab runner user
-      become: true
       user:
         name: "{{ runner_user }}"
-        password: "{{ runner_password }}"
+        # password: "{{ runner_password }}"
+        password: "temp"
         comment: GitLab Runner
         groups:
           - "{{ runner_user }}"
@@ -19,15 +19,11 @@
         shell: /bin/bash
       register: gitlab_runner_user
 
-    - name: Get Gitlab runner user's UID
-      set_fact:
-        runner_uid: "{{ gitlab_runner_user.uid }}"
-
-    - debug:
-        msg: "runner_uid = {{ runner_uid }}"
+    # - name: Get Gitlab runner user's UID
+    #   set_fact:
+    #     runner_uid: "{{ gitlab_runner_user.uid }}"
 
     - name: Gitlab runner directories
-      become: true
       file:
         path: /Users/{{ runner_user }}/{{ item }}
         state: directory
@@ -35,12 +31,36 @@
         group: "{{ runner_user }}"
         mode: 'u=rwx,g=,o='
       loop:
+        - .gitlab-runner
+        - .temp
+        - Parallels
         - bin
         - builds
         - caches
-        - conf
         - etc
+        - logs
         - work
+      notify: clean-executor-temp-dir
+
+    - name: Copy user playbook
+      template:
+        src: "runner-user/{{ item }}"
+        dest: /Users/{{ runner_user }}/.temp
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: 'u=rw,g=,o='
+      loop:
+        - user-playbook.yaml
+        - user-inventory.yaml
+        - ansible.cfg
+
+    - name: Copy user playbook script
+      template:
+        src: runner-user/run-user-playbook.sh
+        dest: /Users/{{ runner_user }}/.temp
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: 'u=rwx,g=,o='
 
 - name: Determine Gitlab runner service status
   block:
@@ -66,18 +86,10 @@
       set_fact:
         runner_service_pid: "{{ runner_service_pid | default('') }}"
 
-    - debug:
-        msg: "runner_service_pid = {{ runner_service_pid }}"
-
     - name: Set runner predicates
       set_fact:
-        is_runner_registered: "{{ runner_service_pid != '' }}"
+        # is_runner_registered: "{{ runner_service_pid != '' }}"
         is_runner_running: "{{ runner_service_pid != '' and runner_service_pid != '-' }}"
-
-    - debug:
-        msg: "is_runner_registered = {{ is_runner_registered }}"
-    - debug:
-        msg: "is_runner_running = {{ is_runner_running }}"
 
 - name: Stop runner service
   community.general.launchd:
@@ -101,9 +113,6 @@
       register: current_runner_version_reg
       changed_when: false
 
-    - debug:
-        msg: "current_runner_version_reg = {{ current_runner_version_reg }}"
-
     - name: Determine current runner version 1 / 2
       set_fact:
         current_runner_version: "{{ current_runner_version_reg.stdout | default('') | regex_search('Version:[\\s]+([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first }}"
@@ -113,15 +122,9 @@
       set_fact:
         current_runner_version: "{{ current_runner_version | default('') }}"
 
-    - debug:
-        msg: "current_runner_version = {{ current_runner_version }}"
-
     - name: Determine whether we need to (re-)install the runner
       set_fact:
         need_runner_install: "{{ not gitlab_runner.stat.exists or (gitlab_runner_version != (current_runner_version | default(''))) }}"
-
-    - debug:
-        msg: "need_runner_install = {{ need_runner_install }}"
 
     - name: Install runner {{ gitlab_runner_version }}
       become: true
@@ -180,3 +183,52 @@
         label: "{{ item.name }}"
         index_var: index
       when: not runner_registered.results[index].stat.exists
+
+    - name: Read per-project runner registrations
+      become: true
+      shell:
+        cmd: jq --slurp '.' project-registration.*.json
+        chdir: /Users/{{ runner_user }}/etc
+      register: runner_per_project_registrations_raw
+      changed_when: false
+
+    - name: Set runner_per_project_registrations
+      set_fact:
+        runner_per_project_registrations: "{{ runner_per_project_registrations_raw.stdout | from_json }}"
+
+- name: Create runner config file
+  become: true
+  template:
+    src: config.toml
+    dest: /Users/{{ runner_user }}/.gitlab-runner
+    owner: "{{ runner_user }}"
+    group: "{{ runner_user }}"
+    mode: 'u=rw,g=,o='
+
+- name: Create launchd config file
+  become: true
+  template:
+    src: launch-daemon.xml
+    dest: /Library/LaunchDaemons/{{ runner_service_label }}.plist
+    owner: root
+    group: wheel
+    mode: 'u=rw,g=r,o=r'
+
+- name: Run runner user playbook
+  become: true
+  command:
+    argv:
+      - login
+      - -f
+      - "{{ runner_user }}"
+      - /Users/{{ runner_user }}/.temp/run-user-playbook.sh
+  register: run_user_playbook
+
+- name: Display user playbook log
+  debug:
+    msg: "{{ run_user_playbook.stdout }}"
+
+- name: Start runner service
+  community.general.launchd:
+    name: "{{ runner_service_label }}"
+    state: started

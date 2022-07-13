@@ -1,0 +1,9 @@
+---
+
+all:
+  hosts:
+    localhost:
+      ansible_connection: local
+      ansible_python_interpreter: auto_silent
+
+      vm_name: "{{ gitlab_executor.vm_name }}"

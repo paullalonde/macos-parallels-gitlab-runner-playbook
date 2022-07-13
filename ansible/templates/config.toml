@@ -5,23 +5,23 @@ concurrent = 1
 check_interval = 60
 log_level = "warn"
 
-[session_server]
-  session_timeout = 1800
+# [session_server]
+#   session_timeout = 1800
 
+{% for item in gitlab_macos_projects %}
 [[runners]]
-  name = "{{ gitlab_executor_name }}"
-  url = "{{ gitlab_runner_registration_url }}"
-  token = "{{ gitlab_runner_token }}"
-  builds_dir = "/Users/gitlab-runner/builds"
-  cache_dir = "/Users/gitlab-runner/caches"
-  executor = "shell"
-  # executor = "virtualbox"
+  name = "{{ item.name }}"
+  url = "https://gitlab.com/"
+  token = "{{ runner_per_project_registrations[loop.index-1].token }}"
+  builds_dir = "/Users/{{ runner_user }}/builds"
+  cache_dir = "/Users/{{ runner_user }}/caches"
+  executor = "parallels"
 
-  # [runners.ssh]
-  #   user = "gitlab-executor"
-  #   identity_file = "/Users/gitlab-runner/.ssh/gitlab-executor"
-  # [runners.virtualbox]
-  #   base_name = "{{ gitlab_executor_vm_name }}"
-  #   base_snapshot = "{{ gitlab_executor_vm_snapshot_name }}"
-  #   # base_folder = ""
-  #   disable_snapshots = false
+  [runners.parallels]
+    base_name = "{{ gitlab_executor.vm_name }}"
+    disable_snapshots = false
+
+  [runners.ssh]
+    user = "{{ gitlab_executor.user }}"
+    password = "{{ gitlab_executor.password | trim }}"
+{% endfor %}
