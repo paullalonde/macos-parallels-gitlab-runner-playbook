@@ -1,156 +1,182 @@
 ---
 
-- name: Gitlab runner group
-  become: true
-  group:
-    name: gitlab-runner
-
 - name: Gitlab runner user
-  become: true
-  user:
-    name: gitlab-runner
-    password: "{{ gitlab_runner_password }}"
-    comment: GitLab Runner
-    groups:
-      - gitlab-runner
-    hidden: false
-    shell: /bin/bash
+  block:
+    - name: Gitlab runner group
+      become: true
+      group:
+        name: "{{ runner_user }}"
 
-- name: Gitlab runner directories
-  become: true
-  file:
-    path: /Users/gitlab-runner/{{ item }}
-    state: directory
-    owner: gitlab-runner
-    group: gitlab-runner
-    mode: 'u=rwx,g=,o='
-  loop:
-    - bin
-    - builds
-    - caches
-    - conf
-    - work
+    - name: Gitlab runner user
+      become: true
+      user:
+        name: "{{ runner_user }}"
+        password: "{{ runner_password }}"
+        comment: GitLab Runner
+        groups:
+          - "{{ runner_user }}"
+        hidden: true
+        shell: /bin/bash
+      register: gitlab_runner_user
 
-- name: Check if Gitlab Runner is already installed
-  become: true
-  stat:
-    path: /Users/gitlab-runner/bin/gitlab-runner
-  register: gitlab_runner
+    - name: Get Gitlab runner user's UID
+      set_fact:
+        runner_uid: "{{ gitlab_runner_user.uid }}"
 
-- name: Call Gitlab Runner version
-  become: true
-  command:
-    cmd: /Users/gitlab-runner/bin/gitlab-runner --version
-  when: gitlab_runner.stat.exists
-  register: current_runner_version_reg
-  changed_when: false
+    - debug:
+        msg: "runner_uid = {{ runner_uid }}"
 
-- name: Determine current Gitlab Runner version 1/2
-  set_fact:
-    current_runner_version_line: "{{ current_runner_version_reg.stdout | default('') | regex_search('Version:[\\s]+([0-9]+\\.[0-9]+\\.[0-9]+)') }}"
+    - name: Gitlab runner directories
+      become: true
+      file:
+        path: /Users/{{ runner_user }}/{{ item }}
+        state: directory
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: 'u=rwx,g=,o='
+      loop:
+        - bin
+        - builds
+        - caches
+        - conf
+        - etc
+        - work
 
-- name: Determine current Gitlab Runner version 2/2
-  set_fact:
-    current_runner_version: "{{ current_runner_version_line | regex_replace('Version:[\\s]+([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | default('') }}"
+- name: Determine Gitlab runner service status
+  block:
+    - name: Set escaped runner service line regex
+      set_fact:
+        runner_service_line_regex: "{{ '([-0-9]+)\\s+([0-9]+)\\s+' + (runner_service_label | regex_escape) }}"
 
-- name: Current current_runner_version
-  debug:
-    msg: "{{ current_runner_version }}"
+    - name: Read the list of launchd services
+      command: launchctl list
+      register: launchctl_list
+      changed_when: false
 
-- name: Determine if we need to install/update runner
-  set_fact:
-    need_runner_install: "{{ current_runner_version != gitlab_runner_version }}"
+    - name: Find the runner service
+      set_fact:
+        runner_service_line: "{{ launchctl_list.stdout | default('') | regex_search(runner_service_line_regex) | default('') }}"
 
-- name: Current need_runner_install
-  debug:
-    msg: "{{ need_runner_install }}"
+    - name: Find the runner service's pid 1 / 2
+      set_fact:
+        runner_service_pid: "{{ runner_service_line | regex_search(runner_service_line_regex, '\\1') | first }}"
+      when: runner_service_line != ""
 
-- name: Check if Gitlab Launch Daemon is already installed
-  stat:
-    path: /Library/LaunchDaemons/com.ticksmith.macos-gitlab-runner.plist
-  register: launch_daemon_plist
+    - name: Find the runner service's pid 1 / 2
+      set_fact:
+        runner_service_pid: "{{ runner_service_pid | default('') }}"
 
-- name: Do we need to stop the Gitlab runner service ?
-  set_fact:
-    need_runner_stop: "{{ launch_daemon_plist.stat.exists or need_runner_install }}"
+    - debug:
+        msg: "runner_service_pid = {{ runner_service_pid }}"
 
-- name: Current need_runner_stop
-  debug:
-    msg: "{{ need_runner_stop }}"
+    - name: Set runner predicates
+      set_fact:
+        is_runner_registered: "{{ runner_service_pid != '' }}"
+        is_runner_running: "{{ runner_service_pid != '' and runner_service_pid != '-' }}"
 
-- name: Stop Gitlab Runner
+    - debug:
+        msg: "is_runner_registered = {{ is_runner_registered }}"
+    - debug:
+        msg: "is_runner_running = {{ is_runner_running }}"
+
+- name: Stop runner service
   community.general.launchd:
-    name: com.ticksmith.macos-gitlab-runner
+    name: "{{ runner_service_label }}"
     state: stopped
-  when: need_runner_stop
+  when: is_runner_running
 
-- name: Install Gitlab Runner {{ gitlab_runner_version }}
-  become: true
-  get_url:
-    url: https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/binaries/gitlab-runner-darwin-amd64
-    dest: /Users/gitlab-runner/bin/gitlab-runner
-    checksum: "sha256:{{ gitlab_runner_hash }}"
-    owner: gitlab-runner
-    group: gitlab-runner
-    mode: 'u=rwx,g=rx,o=rx'
-  when: need_runner_install
+- name: Install runner software
+  block:
+    - name: Check if runner is already installed
+      become: true
+      stat:
+        path: /Users/{{ runner_user }}/bin/gitlab-runner
+      register: gitlab_runner
 
-- name: Check if Gitlab Runner is already registered
-  become: true
-  stat:
-    path: /Users/gitlab-runner/conf/registration.json
-  register: runner_registration_file
+    - name: Call runner version
+      become: true
+      command:
+        cmd: /Users/{{ runner_user }}/bin/gitlab-runner --version
+      when: gitlab_runner.stat.exists
+      register: current_runner_version_reg
+      changed_when: false
 
-- name: Do we need to register the Gitlab runner ?
-  set_fact:
-    need_runner_registration: "{{ not runner_registration_file.stat.exists }}"
+    - debug:
+        msg: "current_runner_version_reg = {{ current_runner_version_reg }}"
 
-- name: Current need_runner_registration
-  debug:
-    msg: "{{ need_runner_registration }}"
+    - name: Determine current runner version 1 / 2
+      set_fact:
+        current_runner_version: "{{ current_runner_version_reg.stdout | default('') | regex_search('Version:[\\s]+([0-9]+\\.[0-9]+\\.[0-9]+)', '\\1') | first }}"
+      when: gitlab_runner.stat.exists
 
-# - name: Register Gitlab Runner
-#   uri:
-#     url: https://gitlab.com/api/v4/runners
-#     method: POST
-#     body_format: json
-#     body:
-#       token: "{{ gitlab_runner_registration_token }}"
-#       description: "{{ gitlab_runner_description }}"
-#       info:
-#         version: "{{ gitlab_runner_version }}"
-#         platform: "{{ hostvars[inventory_hostname].ansible_distribution }}"
-#         architecture: "{{ hostvars[inventory_hostname].ansible_architecture }}"
-#       active: true
-#       locked: false
-#       tag_list: ticksmith-macos
-#       run_untagged: false
-#     status_code: 201
-#     dest: /Users/gitlab-runner/conf/registration.json
-#     owner: gitlab-runner
-#     group: gitlab-runner
-#     mode: 'u=rw,g=,o='
-#   when: need_runner_registration
+    - name: Determine current runner version 2 / 2
+      set_fact:
+        current_runner_version: "{{ current_runner_version | default('') }}"
 
-- name: Register Gitlab Runner
-  gitlab_runner:
-    description: "{{ gitlab_runner_description }}"
-    api_token: "{{ item.access_token | trim }}"
-    registration_token: "{{ item.registration_token | trim }}"
-    project: "{{ item.name }}"
-    access_level: not_protected
-    api_url: https://gitlab.com/
-    state: present
-    active: true
-    tag_list:
-      - ticksmith-macos
-    run_untagged: false
-    locked: false
-  loop: "{{ gitlab_macos_projects }}"
-  loop_control:
-    label: "{{ item.name }}"
-  register: runner_registration
+    - debug:
+        msg: "current_runner_version = {{ current_runner_version }}"
 
-- name: Current runner_registration
-  debug:
-    msg: "{{ runner_registration }}"
+    - name: Determine whether we need to (re-)install the runner
+      set_fact:
+        need_runner_install: "{{ not gitlab_runner.stat.exists or (gitlab_runner_version != (current_runner_version | default(''))) }}"
+
+    - debug:
+        msg: "need_runner_install = {{ need_runner_install }}"
+
+    - name: Install runner {{ gitlab_runner_version }}
+      become: true
+      get_url:
+        url: https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/binaries/gitlab-runner-darwin-amd64
+        dest: /Users/{{ runner_user }}/bin/gitlab-runner
+        checksum: "sha256:{{ gitlab_runner_hash }}"
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: 'u=rwx,g=rx,o=rx'
+      when: need_runner_install
+
+- name: Register per-project runners
+  block:
+    - name: Check if per-project runners are already registered
+      become: true
+      stat:
+        path: /Users/{{ runner_user }}/etc/project-registration.{{ item.id }}.json
+      loop: "{{ gitlab_macos_projects }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: index
+      register: runner_registered
+
+    - name: Register per-project runners
+      gitlab_runner:
+        description: "{{ gitlab_runner_description }}"
+        api_token: "{{ item.access_token | trim }}"
+        registration_token: "{{ item.registration_token | trim }}"
+        project: "{{ item.id }}"
+        access_level: not_protected
+        api_url: https://gitlab.com/
+        state: present
+        active: true
+        tag_list:
+          - ticksmith-macos
+        run_untagged: false
+        locked: false
+      loop: "{{ gitlab_macos_projects }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: index
+      when: not runner_registered.results[index].stat.exists
+      register: runner_registration
+
+    - name: Record per-project runner registrations
+      become: true
+      copy:
+        content: "{{ runner_registration.results[index].runner }}"
+        dest: /Users/{{ runner_user }}/etc/project-registration.{{ item.id }}.json
+        owner: "{{ runner_user }}"
+        group: "{{ runner_user }}"
+        mode: 'u=rw,g=,o='
+      loop: "{{ gitlab_macos_projects }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: index
+      when: not runner_registered.results[index].stat.exists

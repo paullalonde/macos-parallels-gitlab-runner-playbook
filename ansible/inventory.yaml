@@ -6,3 +6,11 @@ all:
       hosts:
         # Paul's Mac Mini
         botte.local: {}
+    maskirovka:
+      hosts:
+        # Paul's Mac Pro
+        maskirovka.local: {}
+
+  hosts:
+    maskirovka.local:
+      ansible_connection: local

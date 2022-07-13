@@ -2,3 +2,6 @@
 venv/
 /.ansible-vault-pw
 .env
+/notes.txt
+*.vaultpw
+ciphertext
