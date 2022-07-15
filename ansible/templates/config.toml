@@ -85,7 +85,7 @@ log_level = "debug"
       -S "apple-tool:,apple:,codesign:" \
       -k "${KEYCHAIN_PASSWORD}" \
       "${KEYCHAIN}" \
-      2>/dev/null
+      >/dev/null
 
     # Add keychain to search list
     security list-keychains -d user -s "${KEYCHAIN}"
