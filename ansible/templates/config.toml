@@ -2,8 +2,8 @@
 
 # Global
 concurrent = 1
-check_interval = 60
-log_level = "warn"
+check_interval = 10
+log_level = "debug"
 
 # [session_server]
 #   session_timeout = 1800
@@ -13,9 +13,95 @@ log_level = "warn"
   name = "{{ item.name }}"
   url = "https://gitlab.com/"
   token = "{{ runner_per_project_registrations[loop.index-1].token }}"
-  builds_dir = "/Users/{{ runner_user }}/builds"
-  cache_dir = "/Users/{{ runner_user }}/caches"
+  builds_dir = "/Users/{{ gitlab_executor.user }}/builds"
+  cache_dir = "/Users/{{ gitlab_executor.user }}/caches"
   executor = "parallels"
+
+  pre_clone_script = '''
+    echo "Preparing Keychain"
+
+    TEMP_DIR=~/.runner-temp
+    mkdir -p "${TEMP_DIR}"
+
+    APPLICATION_CERT=${TEMP_DIR}/developer-id-application.p12
+    echo '{{ apple_developer_id_application_certificate.stdout }}' | base64 -d >${APPLICATION_CERT}
+
+    INSTALLER_CERT=${TEMP_DIR}/developer-id-installer.p12
+    echo '{{ apple_developer_id_installer_certificate.stdout }}' | base64 -d >${INSTALLER_CERT}
+
+    APPLE_CREDENTIALS_JSON=${TEMP_DIR}/credentials.json
+    jq -c --null-input \
+      --arg user "{{ apple_developer_program_credentials.username }}" \
+      --arg pass "{{ apple_developer_program_credentials.password | trim }}" \
+      --arg prov "{{ apple_developer_program_credentials.provider | trim }}" \
+      '{username: $user, password: $pass, provider: $prov}' \
+      >${APPLE_CREDENTIALS_JSON}
+    APPLE_CREDENTIALS=$(cat ${APPLE_CREDENTIALS_JSON})
+
+    KEYCHAIN=executor-$(uuidgen)
+    KEYCHAIN_PASSWORD=$(uuidgen)
+
+    # Create keychain
+    security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
+
+    # Unlock keychain
+    security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
+
+    # Set keychain settings (no lock timeout)
+    security set-keychain-settings -u "${KEYCHAIN}"
+
+    # Import Developer ID Application certificate
+    # The '-A' option allows any application to read keys.
+    # This would be insecure if the keychain was retained but Gitlab executor VMs are thrown away after use.
+    security import "${APPLICATION_CERT}" \
+      -f pkcs12 \
+      -k "${KEYCHAIN}" \
+      -A \
+      -T /usr/bin/codesign \
+      -T /usr/bin/security \
+      -P "{{ apple_certificates.developer_id_application.password | trim }}" \
+      >/dev/null
+
+    # Import Developer ID Installer certificate
+    security import "${INSTALLER_CERT}" \
+      -f pkcs12 \
+      -k "${KEYCHAIN}" \
+      -A \
+      -T /usr/bin/codesign \
+      -T /usr/bin/security \
+      -P "{{ apple_certificates.developer_id_installer.password | trim }}" \
+      >/dev/null
+
+    # Import Apple developer program credentials
+    security add-generic-password \
+      -a "{{ apple_developer_program_credentials.username }}" \
+      -s "{{ apple_developer_program_credentials.service }}" \
+      -l "Apple Developer Program ({{ apple_developer_program_credentials.username }})" \
+      -w ${APPLE_CREDENTIALS} \
+      "${KEYCHAIN}"
+
+    # Allow Apple tools to access signing keys
+    security set-key-partition-list \
+      -S "apple-tool:,apple:,codesign:" \
+      -k "${KEYCHAIN_PASSWORD}" \
+      "${KEYCHAIN}" \
+      2>/dev/null
+
+    # Add keychain to search list
+    security list-keychains -d user -s "${KEYCHAIN}"
+
+    # Cleanup
+    rm -rf ~/.runner-temp
+  '''
+
+  pre_build_script = '''
+    echo "Creating runner variables"
+
+    export APPLE_DEVELOPER_ID_APPLICATION_CERTIFICATE_HASH={{ apple_certificates.developer_id_application.hash }}
+    export APPLE_DEVELOPER_ID_INSTALLER_CERTIFICATE_HASH={{ apple_certificates.developer_id_installer.hash }}
+    export APPLE_DEVELOPER_PROGRAM_USER={{ apple_developer_program_credentials.username }}
+    export APPLE_DEVELOPER_PROGRAM_KEYCHAIN_SERVICE={{ apple_developer_program_credentials.service }}
+  '''
 
   [runners.parallels]
     base_name = "{{ gitlab_executor.vm_name }}"
@@ -24,4 +110,5 @@ log_level = "warn"
   [runners.ssh]
     user = "{{ gitlab_executor.user }}"
     password = "{{ gitlab_executor.password | trim }}"
+    disable_strict_host_key_checking = true
 {% endfor %}

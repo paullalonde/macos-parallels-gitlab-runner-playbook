@@ -6,7 +6,7 @@ disable_sleep: true
 disable_software_updates: true
 
 runner_user: gitlab-runner
-runner_password: '' # REPLACE !!!
+runner_password: '<REPLACE-ME>'
 
 runner_service_label: com.ticksmith.macos-gitlab-runner
 
