@@ -36,7 +36,7 @@ if [[ -f "${BASE_DIR}/.env" ]]; then
   source "${BASE_DIR}/.env"
 fi
 
-pushd "${BASE_DIR}/ansible" >/dev/null
+cd "${BASE_DIR}/ansible"
 
 TEMP_DIR=../.temp
 mkdir -p "${TEMP_DIR}"
@@ -73,5 +73,3 @@ ansible-playbook \
   --inventory=inventory.yaml \
   --limit "${HOST}" \
   playbook.yaml
-
-popd >/dev/null
