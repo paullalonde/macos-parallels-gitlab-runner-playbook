@@ -2,6 +2,8 @@
 - hosts: all
   # become: true
   tasks:
+    - name: Stop daemon, if necessary
+      import_tasks: tasks/stop-daemon.yaml
 
     - name: Disable Sleep
       import_tasks: tasks/no-sleep.yaml
@@ -30,13 +32,36 @@
       loop:
         - python-gitlab==3.6.0
 
-    - name: Create Runner
+    - name: Install Gitlab runner
       import_tasks: tasks/runner.yaml
 
+    - name: Register Gitlab runner
+      import_tasks: tasks/registration.yaml
+
+    - name: Install runner VM
+      import_tasks: tasks/vm.yaml
+
+    - name: Create daemon config file
+      become: true
+      template:
+        src: launch-daemon.xml
+        dest: /Library/LaunchDaemons/{{ runner_service_label }}.plist
+        owner: root
+        group: wheel
+        mode: 'u=rw,g=r,o=r'
+      # notify: start-daemon
+
   handlers:
-    - name: Clean up gitlab-runner temp directory
+    - name: Clean up downloaded VM
       become: true
       file:
-        dest: /Users/{{ runner_user }}/.temp/
+        dest: /tmp/{{ gitlab_executor.vm_name }}.tgz
         state: absent
-      listen: clean-runner-temp-dir
+      listen: cleanup-downloaded-vm
+
+    - name: Start Daemon
+      become: true
+      community.general.launchd:
+        name: "{{ runner_service_label }}"
+        state: started
+      listen: start-daemon

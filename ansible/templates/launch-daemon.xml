@@ -11,27 +11,25 @@
     <key>Disabled</key><false/>
     <key>Label</key>
     <string>{{ runner_service_label }}</string>
-    <key>UserName</key>
-    <string>{{ runner_user }}</string>
-    <key>GroupName</key>
-    <string>{{ runner_user }}</string>
     <key>Program</key>
-    <string>/Users/{{ runner_user }}/bin/gitlab-runner</string>
+    <string>/usr/local/bin/gitlab-runner</string>
     <key>ProgramArguments</key>
     <array>
       <string>run</string>
       <string>--working-directory</string>
-      <string>/Users/{{ runner_user }}/work</string>
-      <string>--syslog</string>
-      <string>--debug</string>
+      <string>/var/gitlab-runner/work</string>
     </array>
     <key>WorkingDirectory</key>
-    <string>/Users/{{ runner_user }}</string>
+    <string>/var/gitlab-runner</string>
     <key>EnvironmentVariables</key>
     <dict>
       <key>PATH</key>
       <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
     </dict>
+    <key>StandardOutPath</key>
+    <string>/var/log/gitlab-runner/stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/var/log/gitlab-runner/stderr.log</string>
     <!--
     <key>ProcessType</key>
     <string>Background</string>

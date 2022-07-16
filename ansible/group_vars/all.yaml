@@ -5,9 +5,6 @@ ansible_python_interpreter: auto_silent
 disable_sleep: true
 disable_software_updates: true
 
-runner_user: gitlab-runner
-runner_password: '<REPLACE-ME>'
-
 runner_service_label: com.ticksmith.macos-gitlab-runner
 
 gitlab_runner_version: "15.1.0"
@@ -30,3 +27,5 @@ gitlab_macos_projects:
       65343934643461636464303835313330353530376335303138656237633338343831363939333664
       3463326262646265310a376330666662386536383934316239333434623137383731343530333530
       64383566343537663365383735653038346363643333336662373432376634373734
+
+vm_base_url: http://192.168.71.161:8000/virtual-machines/parallels

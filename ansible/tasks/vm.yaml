@@ -1,0 +1,84 @@
+---
+
+- name: Clean up existing VMs
+  become: true
+  block:
+    - name: Read the list of VMs
+      command: prlctl list --all --output name --no-header
+      register: parallels_vm_list
+      changed_when: false
+
+    - name: Stop the executor VMs
+      command: prlctl stop {{ item }}
+      when: item | regex_search((gitlab_executor.vm_name | regex_escape) + '.*')
+      loop: "{{ parallels_vm_list.stdout_lines }}"
+      ignore_errors: true
+
+    - name: Get info on the cloned VMs
+      command: prlctl list --info {{ item }}
+      when: item | regex_search((gitlab_executor.vm_name | regex_escape) + '-runner-.*')
+      loop: "{{ parallels_vm_list.stdout_lines }}"
+      register: parallels_cloned_vm_list
+
+    - name: Unregister the executor VMs, both cloned and non-cloned
+      command: prlctl unregister {{ item }}
+      when: item | regex_search((gitlab_executor.vm_name | regex_escape) + '.*')
+      loop: "{{ parallels_vm_list.stdout_lines }}"
+
+    - name: Get cloned VM paths
+      set_fact:
+        cloned_vm_paths: "{{ cloned_vm_paths|default([]) + (item.stdout | regex_search('Home:\\s+([^\\s]+)', '\\1')) }}"
+      when: not (item.skipped | default(false))
+      loop: "{{ parallels_cloned_vm_list.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Delete cloned VM files
+      file:
+        dest: "{{ item }}"
+        state: absent
+      loop: "{{ cloned_vm_paths | default([]) }}"
+
+    - name: Retrieve user list
+      command: prlsrvctl user list --output name,def_vm_home --no-header
+      register: parallels_user_list
+      changed_when: false
+
+    - name: Get cloned VM paths
+      set_fact:
+        root_parallels_home: "{{ parallels_user_list.stdout | regex_search('root@\\.\\s+([^\\s]+)', '\\1') | first }}"
+
+    - name: Delete VM template
+      file:
+        dest: "{{ root_parallels_home }}/{{ gitlab_executor.vm_name }}-template.pvm"
+        state: absent
+
+- name: Create executor VM
+  become: true
+  block:
+    - name: Check if the VM file is already there
+      stat:
+        path: /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm
+      register: runner_vm
+
+    - name: Download VM
+      get_url:
+        url: "{{ vm_base_url }}/{{ gitlab_executor.vm_name }}.tgz"
+        dest: /tmp/{{ gitlab_executor.vm_name }}.tgz
+        checksum: "sha256:{{ gitlab_executor.vm_checksum }}"
+        owner: root
+        group: admin
+        mode: 'u=rw,g=r,o=r'
+      when: not runner_vm.stat.exists
+      notify: cleanup-downloaded-vm
+
+    # We don't use the unarchive module, because it calls GNU tar, *not* the tar installed by default on macOS.
+    # This results in extra files with leading underscores being created, which are strangely reminiscent
+    # of the old AppleDouble format.
+    - name: Decompress VM
+      command:
+        cmd: tar -xzf /tmp/{{ gitlab_executor.vm_name }}.tgz -C /var/gitlab-runner/vms --uname root --gname admin
+      when: not runner_vm.stat.exists
+
+    - name: Register VM
+      command: prlctl register /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm

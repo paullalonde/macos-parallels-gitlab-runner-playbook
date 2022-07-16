@@ -20,7 +20,7 @@ log_level = "debug"
   pre_clone_script = '''
     echo "Preparing Keychain"
 
-    TEMP_DIR=~/.runner-temp
+    TEMP_DIR=~/.executor-temp
     mkdir -p "${TEMP_DIR}"
 
     APPLICATION_CERT=${TEMP_DIR}/developer-id-application.p12
