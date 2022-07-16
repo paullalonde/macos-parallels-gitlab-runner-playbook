@@ -2,7 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
   <dict>
-    <!-- <key>SessionCreate</key><true/> -->
     <key>KeepAlive</key>
     <dict>
       <key>SuccessfulExit</key><true/>
@@ -11,10 +10,9 @@
     <key>Disabled</key><false/>
     <key>Label</key>
     <string>{{ runner_service_label }}</string>
-    <key>Program</key>
-    <string>/usr/local/bin/gitlab-runner</string>
     <key>ProgramArguments</key>
     <array>
+      <string>/usr/local/bin/gitlab-runner</string>
       <string>run</string>
       <string>--working-directory</string>
       <string>/var/gitlab-runner/work</string>
@@ -30,9 +28,5 @@
     <string>/var/log/gitlab-runner/stdout.log</string>
     <key>StandardErrorPath</key>
     <string>/var/log/gitlab-runner/stderr.log</string>
-    <!--
-    <key>ProcessType</key>
-    <string>Background</string>
-    -->
   </dict>
 </plist>

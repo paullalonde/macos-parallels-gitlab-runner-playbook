@@ -13,22 +13,9 @@
   set_fact:
     runner_service_line: "{{ launchctl_list.stdout | default('') | regex_search(runner_service_line_regex) | default('') }}"
 
-- name: Find the runner service's pid 1 / 2
-  set_fact:
-    runner_service_pid: "{{ runner_service_line | regex_search(runner_service_line_regex, '\\1') | first }}"
-  when: runner_service_line != ""
-
-- name: Find the runner service's pid 1 / 2
-  set_fact:
-    runner_service_pid: "{{ runner_service_pid | default('') }}"
-
-- name: Set runner predicates
-  set_fact:
-    is_runner_running: "{{ runner_service_pid != '' and runner_service_pid != '-' }}"
-
 - name: Stop daemon
   become: true
   community.general.launchd:
     name: "{{ runner_service_label }}"
     state: stopped
-  when: is_runner_running
+  when: runner_service_line != ""

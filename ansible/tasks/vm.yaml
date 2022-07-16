@@ -44,7 +44,7 @@
       register: parallels_user_list
       changed_when: false
 
-    - name: Get cloned VM paths
+    - name: Get default VM path
       set_fact:
         root_parallels_home: "{{ parallels_user_list.stdout | regex_search('root@\\.\\s+([^\\s]+)', '\\1') | first }}"
 

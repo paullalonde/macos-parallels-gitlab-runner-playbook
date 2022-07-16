@@ -1,0 +1,17 @@
+---
+
+- name: Create daemon config file
+  become: true
+  template:
+    src: launch-daemon.xml
+    dest: /Library/LaunchDaemons/{{ runner_service_label }}.plist
+    owner: root
+    group: wheel
+    mode: 'u=rw,g=r,o=r'
+
+- name: Start Daemon
+  become: true
+  community.general.launchd:
+    name: "{{ runner_service_label }}"
+    enabled: true
+    state: restarted

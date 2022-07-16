@@ -2,8 +2,8 @@
 
 # Global
 concurrent = 1
-check_interval = 10
-log_level = "debug"
+check_interval = 15
+log_level = "warn"
 
 # [session_server]
 #   session_timeout = 1800

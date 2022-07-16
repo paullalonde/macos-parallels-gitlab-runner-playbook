@@ -40,15 +40,8 @@
     - name: Install runner VM
       import_tasks: tasks/vm.yaml
 
-    - name: Create daemon config file
-      become: true
-      template:
-        src: launch-daemon.xml
-        dest: /Library/LaunchDaemons/{{ runner_service_label }}.plist
-        owner: root
-        group: wheel
-        mode: 'u=rw,g=r,o=r'
-      # notify: start-daemon
+    - name: Start daemon
+      import_tasks: tasks/start-daemon.yaml
 
   handlers:
     - name: Clean up downloaded VM
@@ -57,10 +50,3 @@
         dest: /tmp/{{ gitlab_executor.vm_name }}.tgz
         state: absent
       listen: cleanup-downloaded-vm
-
-    - name: Start Daemon
-      become: true
-      community.general.launchd:
-        name: "{{ runner_service_label }}"
-        state: started
-      listen: start-daemon
