@@ -1,6 +1,5 @@
 ---
 - hosts: all
-  # become: true
   tasks:
     - name: Stop daemon, if necessary
       import_tasks: tasks/stop-daemon.yaml
