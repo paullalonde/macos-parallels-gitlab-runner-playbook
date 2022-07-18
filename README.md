@@ -2,4 +2,23 @@
 
 An Ansible playbook that provisions a Gitlab CI runner on macOS.
 The runner executes jobs via a Parallels Desktop VM.
-It's run as a LaunchDaemon, so it doesn't require a user to be logged in.
+It runs as a LaunchDaemon, so it doesn't require a user to be logged in.
+
+## Requirements
+
+#### Controller
+
+- Ansible
+
+#### Nodes
+
+- A supported version of macOS (Catalina, Big Sur, Monterey).
+- Minimally, the Command Line Developer Tools need to be installed.
+- An Administrator account (i.e. capable of `sudo`).
+
+## Related Repositories
+
+- [Bootable ISO images for macOS](https://github.com/paullalonde/macos-bootable-iso-images).
+- [Base VMs for macOS](https://github.com/paullalonde/macos-parallels-base-vms).
+- [Build VMs for macOS](https://github.com/paullalonde/macos-parallels-build-vms).
+- [Gitlab CI executor VMs for macOS](https://github.com/paullalonde/macos-parallels-gitlab-golang-executor-vms).

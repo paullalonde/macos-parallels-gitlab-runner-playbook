@@ -22,8 +22,7 @@
         api_url: https://gitlab.com/
         state: present
         active: true
-        tag_list:
-          - ticksmith-macos
+        tag_list: "{{ runner_tags }}"
         run_untagged: false
         locked: false
       loop: "{{ gitlab_macos_projects }}"
