@@ -18,7 +18,8 @@ log_level = "debug"
   executor = "parallels"
 
   pre_clone_script = '''
-    echo "Preparin Keychain"
+    echo "Preparing Keychain"
+    
     security unlock-keychain -p "{{ gitlab_executor.keychain_password | trim }}" "{{ gitlab_executor.keychain_name }}"
   '''
 
