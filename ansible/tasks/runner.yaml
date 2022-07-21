@@ -20,19 +20,7 @@
         mode: 'u=rwx,g=rx,o='
       loop:
         - gitlab-runner
-        - gitlab-runner/certificates
         - gitlab-runner/registration
-
-    - name: Copy certificates
-      copy:
-        src: "{{ item }}.p12"
-        dest: /etc/gitlab-runner/certificates/{{ item }}.p12
-        owner: root
-        group: admin
-        mode: 'u=r,g=,o='
-      loop:
-        - developer-id-application
-        - developer-id-installer
 
     - name: Create runner work directories
       file:
@@ -83,16 +71,3 @@
         group: admin
         mode: 'u=rwx,g=rx,o=rx'
       when: need_runner_install
-
-- name: Runner configuration
-  become: true
-  block:
-    - name: Read Developer ID Application certificate
-      command: base64 --input /etc/gitlab-runner/certificates/developer-id-application.p12
-      register: apple_developer_id_application_certificate
-      changed_when: false
-
-    - name: Read Developer ID Installer certificate
-      command: base64 --input /etc/gitlab-runner/certificates/developer-id-installer.p12
-      register: apple_developer_id_installer_certificate
-      changed_when: false

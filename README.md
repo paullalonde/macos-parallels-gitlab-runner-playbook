@@ -12,9 +12,9 @@ It runs as a LaunchDaemon, so it doesn't require a user to be logged in.
 
 #### Nodes
 
-- A supported version of macOS (Catalina, Big Sur, Monterey).
+- A somewhat up-to-date version of macOS.
 - Minimally, the Command Line Developer Tools need to be installed.
-- An Administrator account (i.e. capable of `sudo`).
+- An Administrator account (i.e. capable of `sudo`) with a known password.
 
 ## Related Repositories
 

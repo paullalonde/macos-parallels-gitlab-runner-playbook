@@ -63,8 +63,8 @@
 
     - name: Download VM
       get_url:
-        url: "{{ vm_base_url }}/{{ gitlab_executor.vm_name }}.tgz"
-        dest: /tmp/{{ gitlab_executor.vm_name }}.tgz
+        url: "{{ vm_base_url }}/{{ gitlab_executor.vm_name }}.pvm.tgz"
+        dest: /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
         checksum: "sha256:{{ gitlab_executor.vm_checksum }}"
         owner: root
         group: admin
@@ -77,8 +77,21 @@
     # of the old AppleDouble format.
     - name: Decompress VM
       command:
-        cmd: tar -xzf /tmp/{{ gitlab_executor.vm_name }}.tgz -C /var/gitlab-runner/vms --uname root --gname admin
+        argv:
+          - tar
+          - -xzf
+          - /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
+          - -C
+          - /var/gitlab-runner/vms
+          - --uname
+          - root
+          - --gname
+          - admin
       when: not runner_vm.stat.exists
 
     - name: Register VM
-      command: prlctl register /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm
+      command:
+        argv:
+          - prlctl
+          - register
+          - /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm

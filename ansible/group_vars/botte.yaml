@@ -7,21 +7,9 @@ ansible_become_pass: <REPLACE-ME>
 gitlab_runner_description: Paul's Mac Mini (Botte)
 
 gitlab_executor:
-  vm_name: ticksmith-catalina-executor
-  vm_checksum: 8a0be4e79b20b1e87f73ebc0f06efa3eec4020e23664e86a4df6d0f3c559c22a
-  user: gitlab-executor
+  vm_name: macos-catalina-golang-executor
+  vm_checksum: aa6cec584f8ee9a7de9dcf5fb7a7a47096178e5d094d457e1ecfb27b84a516be
+  username: gitlab-executor
   password: <REPLACE-ME>
-
-apple_certificates:
-  developer_id_application:
-    hash: 725BBE75467C343DCD3BE01760FF34051A505785
-    password: <REPLACE-ME>
-  developer_id_installer:
-    hash: E084D34B893F5EE1184CCFB8F902AC3AC80A127C
-    password: <REPLACE-ME>
-
-apple_developer_program_credentials:
-  username: pbl1@paullalonde.ca
-  service: apple-developer-program
-  password: <REPLACE-ME>
-  provider: <REPLACE-ME>
+  keychain_name: <REPLACE-ME>
+  keychain_password: <REPLACE-ME>

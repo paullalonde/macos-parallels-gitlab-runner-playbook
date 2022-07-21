@@ -4,4 +4,4 @@ venv/
 .env
 /notes.txt
 *.vaultpw
-ciphertext
+cipher.txt
