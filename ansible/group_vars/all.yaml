@@ -31,3 +31,5 @@ gitlab_macos_projects:
       64383566343537663365383735653038346363643333336662373432376634373734
 
 vm_base_url: http://192.168.71.161:8000/virtual-machines/parallels
+
+force_vm_update: false

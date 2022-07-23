@@ -61,33 +61,46 @@
         path: /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm
       register: runner_vm
 
-    - name: Download VM
-      get_url:
-        url: "{{ vm_base_url }}/{{ gitlab_executor.vm_name }}.pvm.tgz"
-        dest: /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
-        checksum: "sha256:{{ gitlab_executor.vm_checksum }}"
-        owner: root
-        group: admin
-        mode: 'u=rw,g=r,o=r'
-      when: not runner_vm.stat.exists
-      notify: cleanup-downloaded-vm
+    - name: Determine if we need to install the VM
+      set_fact:
+        install_vm: force_vm_update or (not runner_vm.stat.exists)
 
-    # We don't use the unarchive module, because it calls GNU tar, *not* the tar installed by default on macOS.
-    # This results in extra files with leading underscores being created, which are strangely reminiscent
-    # of the old AppleDouble format.
-    - name: Decompress VM
-      command:
-        argv:
-          - tar
-          - -xzf
-          - /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
-          - -C
-          - /var/gitlab-runner/vms
-          - --uname
-          - root
-          - --gname
-          - admin
-      when: not runner_vm.stat.exists
+    - name: Download and install VM
+      when: install_vm
+      block:
+        - name: Delete existing VM
+          file:
+            dest: "{{ item }}"
+            state: absent
+          loop:
+            - /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
+            - /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm
+
+        - name: Download VM
+          get_url:
+            url: "{{ vm_base_url }}/{{ gitlab_executor.vm_name }}.pvm.tgz"
+            dest: /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
+            checksum: "sha256:{{ gitlab_executor.vm_checksum }}"
+            owner: root
+            group: admin
+            mode: 'u=rw,g=r,o=r'
+          notify: cleanup-downloaded-vm
+
+        # We don't use the unarchive module, because it calls GNU tar, *not* the tar installed by default on macOS.
+        # This results in extra files with leading underscores being created, which are strangely reminiscent
+        # of the old AppleDouble format.
+        - name: Decompress VM
+          command:
+            argv:
+              - tar
+              - -xzf
+              - /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
+              - -C
+              - /var/gitlab-runner/vms
+              - --uname
+              - root
+              - --gname
+              - admin
 
     - name: Register VM
       command:

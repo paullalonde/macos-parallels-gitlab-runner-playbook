@@ -19,8 +19,12 @@ log_level = "debug"
 
   pre_clone_script = '''
     echo "Preparing Keychain"
-    
-    security unlock-keychain -p "{{ gitlab_executor.keychain_password | trim }}" "{{ gitlab_executor.keychain_name }}"
+
+    KEYCHAIN="/Users/{{ gitlab_executor.username }}/Library/Keychains/{{ gitlab_executor.keychain_name }}"
+    KEYCHAIN_PASSWORD="{{ gitlab_executor.keychain_password | trim }}"
+
+    security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
+    security list-keychains -s "${KEYCHAIN}" "/Library/Keychains/System.keychain"
   '''
 
   pre_build_script = '''
