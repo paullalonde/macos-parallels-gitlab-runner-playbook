@@ -5,6 +5,7 @@
     runner_service_line_regex: "{{ '([-0-9]+)\\s+([0-9]+)\\s+' + (runner_service_label | regex_escape) }}"
 
 - name: Read the list of launchd services
+  become: true
   command: launchctl list
   register: launchctl_list
   changed_when: false

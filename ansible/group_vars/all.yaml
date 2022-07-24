@@ -11,6 +11,7 @@ runner_tags:
 
 gitlab_runner_version: "15.1.0"
 gitlab_runner_hash: 96862945d4d1b5f9c16f36ffcf00630a23f49fbddda5dce91ecc29c4077729fd # See https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/index.html
+gitlab_runner_restart_delay: 37
 
 gitlab_macos_projects:
   - name: le_paul_lalonde_private/mac-os-runner-test
@@ -33,3 +34,5 @@ gitlab_macos_projects:
 vm_base_url: http://192.168.71.161:8000/virtual-machines/parallels
 
 force_vm_update: false
+
+jq_version: "jq-1.5"

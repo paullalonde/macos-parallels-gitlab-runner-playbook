@@ -15,6 +15,8 @@ It runs as a LaunchDaemon, so it doesn't require a user to be logged in.
 - A somewhat up-to-date version of macOS.
 - Minimally, the Command Line Developer Tools need to be installed.
 - An Administrator account (i.e. capable of `sudo`) with a known password.
+- Parallels Desktop 17 (Pro or Business edition)
+- Parallels Virtualization SDK 17.1.4
 
 ## Related Repositories
 

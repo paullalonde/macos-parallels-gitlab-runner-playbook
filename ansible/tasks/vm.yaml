@@ -1,43 +1,55 @@
 ---
 
+# The cleanup code might seem overly complex, but it needs to handle two situations:
+#   1. The Gitlab executor creates its own Parallels VMs and VM templates.
+#      They aren't controlled by Ansible, but we need to clean them up, or else they'll just accumulate.
+#   2. If the executor VM's name changes between plays, we need to clean up the old VM.
+
 - name: Clean up existing VMs
   become: true
   block:
-    - name: Read the list of VMs
+    - name: Read the list of registered VMs
       command: prlctl list --all --output name --no-header
-      register: parallels_vm_list
+      register: vm_list
       changed_when: false
 
-    - name: Stop the executor VMs
+    - name: Stop the VMs
       command: prlctl stop {{ item }}
-      when: item | regex_search((gitlab_executor.vm_name | regex_escape) + '.*')
-      loop: "{{ parallels_vm_list.stdout_lines }}"
+      loop: "{{ vm_list.stdout_lines }}"
       ignore_errors: true
 
-    - name: Get info on the cloned VMs
+    - name: Get info on the VMs
       command: prlctl list --info {{ item }}
-      when: item | regex_search((gitlab_executor.vm_name | regex_escape) + '-runner-.*')
-      loop: "{{ parallels_vm_list.stdout_lines }}"
-      register: parallels_cloned_vm_list
+      loop: "{{ vm_list.stdout_lines }}"
+      register: vm_info_list_cmd
 
-    - name: Unregister the executor VMs, both cloned and non-cloned
-      command: prlctl unregister {{ item }}
-      when: item | regex_search((gitlab_executor.vm_name | regex_escape) + '.*')
-      loop: "{{ parallels_vm_list.stdout_lines }}"
-
-    - name: Get cloned VM paths
+    - name: Get the executor VM's path
       set_fact:
-        cloned_vm_paths: "{{ cloned_vm_paths|default([]) + (item.stdout | regex_search('Home:\\s+([^\\s]+)', '\\1')) }}"
-      when: not (item.skipped | default(false))
-      loop: "{{ parallels_cloned_vm_list.results }}"
+        vm_executor_path: "{{ item.stdout | regex_search('Home:\\s+([^\\s]+)', '\\1') | first }}"
+      when: vm_list.stdout_lines[vm_index] == gitlab_executor.vm_name
+      loop: "{{ vm_info_list_cmd.results }}"
       loop_control:
         label: "{{ item.item }}"
+        index_var: vm_index
 
-    - name: Delete cloned VM files
+    - name: Get the non-executor VM's paths
+      set_fact:
+        vm_non_executor_paths: "{{ vm_non_executor_paths|default([]) + (item.stdout | regex_search('Home:\\s+([^\\s]+)', '\\1')) }}"
+      when: vm_list.stdout_lines[vm_index] != gitlab_executor.vm_name
+      loop: "{{ vm_info_list_cmd.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+        index_var: vm_index
+
+    - name: Unregister all VMs
+      command: prlctl unregister {{ item }}
+      loop: "{{ vm_list.stdout_lines }}"
+
+    - name: Delete non-executor VMs
       file:
         dest: "{{ item }}"
         state: absent
-      loop: "{{ cloned_vm_paths | default([]) }}"
+      loop: "{{ vm_non_executor_paths | default([]) }}"
 
     - name: Retrieve user list
       command: prlsrvctl user list --output name,def_vm_home --no-header
@@ -48,10 +60,23 @@
       set_fact:
         root_parallels_home: "{{ parallels_user_list.stdout | regex_search('root@\\.\\s+([^\\s]+)', '\\1') | first }}"
 
-    - name: Delete VM template
+    - name: Find non-registered VMs
+      find:
+        paths:
+          - /var/gitlab-runner/vms
+          - "{{ root_parallels_home }}"
+        patterns: "*.pvm"
+        excludes: "{{ gitlab_executor.vm_name }}.pvm"
+        file_type: directory
+      register: vm_non_registered_paths
+
+    - name: Delete non-registered VMs
       file:
-        dest: "{{ root_parallels_home }}/{{ gitlab_executor.vm_name }}-template.pvm"
+        dest: "{{ item.path }}"
         state: absent
+      loop: "{{ vm_non_registered_paths.files }}"
+      loop_control:
+        label: "{{ item.path }}"
 
 - name: Create executor VM
   become: true
@@ -63,7 +88,7 @@
 
     - name: Determine if we need to install the VM
       set_fact:
-        install_vm: force_vm_update or (not runner_vm.stat.exists)
+        install_vm: "{{ force_vm_update or (not runner_vm.stat.exists) }}"
 
     - name: Download and install VM
       when: install_vm
