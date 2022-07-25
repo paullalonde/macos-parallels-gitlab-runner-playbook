@@ -49,8 +49,6 @@
       shell:
         cmd: jq --slurp '.' project.*.json
         chdir: /etc/gitlab-runner/registration
-      environment:
-        PATH: "{{ ansible_env.PATH }}:/usr/local/bin"
       register: runner_per_project_registrations_raw
       changed_when: false
 

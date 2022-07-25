@@ -1,0 +1,67 @@
+---
+
+- name: Stop daemon
+  become: true
+  community.general.launchd:
+    name: "{{ runner_service_label }}"
+    state: stopped
+  ignore_errors: true
+
+- name: Read the list of registered VMs
+  become: true
+  command: prlctl list --all --output name --no-header
+  register: vm_list
+  changed_when: false
+
+- name: Stop all VMs
+  become: true
+  command: prlctl stop {{ item }}
+  loop: "{{ vm_list.stdout_lines }}"
+  ignore_errors: true
+
+- name: Unregister all VMs
+  become: true
+  command: prlctl unregister {{ item }}
+  loop: "{{ vm_list.stdout_lines }}"
+
+- name: Retrieve user list
+  become: true
+  command: prlsrvctl user list --output name,def_vm_home --no-header
+  register: parallels_user_list
+  changed_when: false
+
+- name: Get default VM path
+  set_fact:
+    root_parallels_home: "{{ parallels_user_list.stdout | regex_search('root@\\.\\s+([^\\s]+)', '\\1') | first }}"
+
+- name: Unregister per-project runners
+  become: true
+  gitlab_runner:
+    description: "{{ gitlab_runner_description }}"
+    api_token: "{{ item.access_token | trim }}"
+    registration_token: "{{ item.registration_token | trim }}"
+    project: "{{ item.id }}"
+    access_level: not_protected
+    api_url: https://gitlab.com/
+    state: absent
+    active: true
+    tag_list: "{{ runner_tags }}"
+    run_untagged: false
+    locked: false
+  loop: "{{ gitlab_macos_projects }}"
+  loop_control:
+    label: "{{ item.name }}"
+    index_var: index
+
+- name: Delete runner files & directories
+  become: true
+  file:
+    dest: "{{ item }}"
+    state: absent
+  loop:
+    - /Library/LaunchDaemons/{{ runner_service_label }}.plist
+    - /etc/gitlab-runner
+    - /usr/local/bin/gitlab-runner
+    - /var/gitlab-runner
+    - /var/log/gitlab-runner
+    - "{{ root_parallels_home }}"

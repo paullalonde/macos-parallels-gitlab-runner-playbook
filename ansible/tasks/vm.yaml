@@ -101,7 +101,7 @@
             - /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
             - /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm
 
-        - name: Download VM
+        - name: Download VM archive
           get_url:
             url: "{{ vm_base_url }}/{{ gitlab_executor.vm_name }}.pvm.tgz"
             dest: /tmp/{{ gitlab_executor.vm_name }}.pvm.tgz
@@ -114,7 +114,7 @@
         # We don't use the unarchive module, because it calls GNU tar, *not* the tar installed by default on macOS.
         # This results in extra files with leading underscores being created, which are strangely reminiscent
         # of the old AppleDouble format.
-        - name: Decompress VM
+        - name: Decompress VM archive
           command:
             argv:
               - tar

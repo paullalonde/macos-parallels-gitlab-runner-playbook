@@ -1,54 +1,56 @@
 ---
 - hosts: all
+  environment:
+    PATH: /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
   tasks:
-    - name: Stop daemon, if necessary
-      import_tasks: tasks/stop-daemon.yaml
+    - name: Install
+      when: not uninstall_runner
+      block:
+        - name: Stop daemon, if necessary
+          include_tasks: tasks/stop-daemon.yaml
 
-    - name: Disable Sleep
-      import_tasks: tasks/no-sleep.yaml
-      when: disable_sleep
+        - name: Disable Sleep
+          include_tasks: tasks/no-sleep.yaml
+          when: disable_sleep
 
-    - name: Disable Software Updates
-      import_role:
-        name: disable-software-updates
-      when: disable_software_updates
+        - name: Disable Software Updates
+          include_role:
+            name: disable-software-updates
+          when: disable_software_updates
 
-    - name: Install Homebrew
-      import_role:
-        name: install-homebrew
+        - name: Install Homebrew
+          import_role:
+            name: install-homebrew
 
-    # - name: Install Homebrew packages
-    #   community.general.homebrew:
-    #     name: "{{ item }}"
-    #     state: absent
-    #   loop:
-    #     - ansible
-    #     - coreutils
+        - name: Install jq
+          become: true
+          get_url:
+            url: https://github.com/stedolan/jq/releases/download/{{ jq_version }}/jq-osx-amd64
+            dest: /usr/local/bin/jq
+            mode: 'u=rwx,g=rx,o=rx'
 
-    - name: Install jq
-      get_url:
-        url: https://github.com/stedolan/jq/releases/download/{{ jq_version }}/jq-osx-amd64
-        dest: /usr/local/bin/jq
-        mode: 'u=rwx,g=rx,o=rx'
+        - name: Install Pip Packages
+          become: true
+          ansible.builtin.pip:
+            name: "{{ item }}"
+          loop:
+            - python-gitlab==3.6.0
 
-    - name: Install Pip Packages
-      become: true
-      ansible.builtin.pip:
-        name: "{{ item }}"
-      loop:
-        - python-gitlab==3.6.0
+        - name: Install Gitlab runner
+          include_tasks: tasks/runner.yaml
 
-    - name: Install Gitlab runner
-      import_tasks: tasks/runner.yaml
+        - name: Register Gitlab runner
+          include_tasks: tasks/registration.yaml
 
-    - name: Register Gitlab runner
-      import_tasks: tasks/registration.yaml
+        - name: Create VM
+          include_tasks: tasks/vm.yaml
 
-    - name: Install runner VM
-      import_tasks: tasks/vm.yaml
+        - name: Start daemon
+          include_tasks: tasks/start-daemon.yaml
 
-    - name: Start daemon
-      import_tasks: tasks/start-daemon.yaml
+    - name: Uninstall
+      include_tasks: tasks/uninstall.yaml
+      when: uninstall_runner
 
   handlers:
     - name: Clean up downloaded VM

@@ -9,11 +9,13 @@ function usage() {
   echo "options:"                                           1>&2
   echo "  --force        Force a VM update."                1>&2
   echo "  --host <host>  Required. The host to provision."  1>&2
+  echo "  --uninstall    Uninstall the runner."             1>&2
   exit 20
 }
 
 HOST=''
 FORCE_VM=false
+UNINSTALL=false
 
 while [[ $# -gt 0 ]]
 do
@@ -26,6 +28,11 @@ do
 
     --force)
     FORCE_VM=true
+    shift
+    ;;
+
+    --uninstall)
+    UNINSTALL=true
     shift
     ;;
 
@@ -57,10 +64,15 @@ echo "${VAULT_PASSWORD_BOTTE}" >"${VAULT_PASSWORD_BOTTE_FILE}"
 echo "${VAULT_PASSWORD_GITLAB}" >"${VAULT_PASSWORD_GITLAB_FILE}"
 echo "${VAULT_PASSWORD_MASKIROVKA}" >"${VAULT_PASSWORD_MASKIROVKA_FILE}"
 
-EXTRA_VARS=$(jq --null-input -c --argjson force "${FORCE_VM}" '{force_vm_update: $force}|tojson')
+EXTRA_VARS_JSON="${TEMP_DIR}/extra-vars.json"
+jq --null-input \
+  --argjson force "${FORCE_VM}" \
+  --argjson uninstall "${UNINSTALL}" \
+  '{force_vm_update: $force, uninstall_runner: $uninstall}' \
+  >"${EXTRA_VARS_JSON}"
 
 ansible-playbook \
-  --extra-vars "${EXTRA_VARS}" \
+  --extra-vars "@${EXTRA_VARS_JSON}" \
   --inventory=inventory.yaml \
   --limit "${HOST}" \
   playbook.yaml
