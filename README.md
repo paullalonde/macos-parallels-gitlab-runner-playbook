@@ -8,13 +8,15 @@ It runs as a LaunchDaemon, so it doesn't require a user to be logged in.
 
 #### Ansible Controller
 
-- Either the Command Line Developer Tools or Xcode need to be installed.
+- On macOS, either the Command Line Developer Tools or Xcode need to be installed.
+- The provisioning script might work on other UNIX-like systems including Linux, but hasn't been tested.
 - Ansible
 - jq
 
 #### Ansible Nodes
 
 - A somewhat up-to-date version of macOS.
+  Provisioning was tested on Catalina, Big Sur, and Monterey.
 - Either the Command Line Developer Tools or Xcode need to be installed.
 - An Administrator account (i.e. capable of `sudo`) with a known password.
 - Parallels Desktop 17 (Pro or Business edition, ie $$)
@@ -28,7 +30,15 @@ TBD
 
 ## Procedure
 
-TBD
+1. Run the script:
+   ```bash
+   ./provision.sh --host <host>
+   ```
+   where *host* is the name of the Ansible group containing the node to provision.
+
+1. The script will perform the following steps:
+   1. Prepare vault passwords for consumption by Ansible.
+   1. Call `ansible-playbook`.
 
 ## Related Repositories
 
