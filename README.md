@@ -6,18 +6,29 @@ It runs as a LaunchDaemon, so it doesn't require a user to be logged in.
 
 ## Requirements
 
-#### Controller
+#### Ansible Controller
 
+- Either the Command Line Developer Tools or Xcode need to be installed.
 - Ansible
 - jq
 
-#### Nodes
+#### Ansible Nodes
 
 - A somewhat up-to-date version of macOS.
-- Minimally, the Command Line Developer Tools need to be installed.
+- Either the Command Line Developer Tools or Xcode need to be installed.
 - An Administrator account (i.e. capable of `sudo`) with a known password.
-- Parallels Desktop 17 (Pro or Business edition)
+- Parallels Desktop 17 (Pro or Business edition, ie $$)
 - Parallels Virtualization SDK 17.1.4
+- A Parallels Desktop VM containing a Gitlab executor.
+  [This repository](https://github.com/paullalonde/macos-parallels-gitlab-golang-executor-vms) can generate a suitable executor VM.
+
+## Setup
+
+TBD
+
+## Procedure
+
+TBD
 
 ## Related Repositories
 
