@@ -44,6 +44,11 @@
       done
   when: runner_daemon_pid != 0
 
+- name: Pause before removing daemon
+  command: sleep 10
+  changed_when: false
+  when: runner_daemon_pid != 0
+
 - name: Remove daemon
   become: true
   command: launchctl bootout system/{{ runner_service_label }}
