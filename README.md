@@ -9,6 +9,7 @@ It runs as a LaunchDaemon, so it doesn't require a user to be logged in.
 #### Controller
 
 - Ansible
+- jq
 
 #### Nodes
 

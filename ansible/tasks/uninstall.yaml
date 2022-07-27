@@ -1,11 +1,48 @@
 ---
 
-- name: Stop daemon
-  become: true
-  community.general.launchd:
-    name: "{{ runner_service_label }}"
-    state: stopped
-  ignore_errors: true
+- name: Stop daemon, if necessary
+  import_tasks: tasks/stop-daemon.yaml
+
+# - name: Is the daemon present?
+#   command: launchctl print system/{{ runner_service_label }}
+#   changed_when: false
+#   ignore_errors: true
+#   register: launchctl_list_cmd
+#
+# - set_fact:
+#     runner_daemon_present: "{{ launchctl_list_cmd.rc == 0}}"
+#
+# - debug:
+#     msg: "runner_daemon_present = {{ runner_daemon_present }}"
+#
+# - name: Disable daemon
+#   become: true
+#   command: launchctl disable system/{{ runner_service_label }}
+#   when: runner_daemon_present
+#
+# - name: Tell daemon to perform a graceful shutdown
+#   become: true
+#   command: launchctl kill SIGQUIT system/{{ runner_service_label }}
+#   when: runner_daemon_present
+#
+# - name: Remove daemon
+#   become: true
+#   command: launchctl bootout system/{{ runner_service_label }}
+#   when: runner_daemon_present
+
+# - name: Stop daemon
+#   become: true
+#   community.general.launchd:
+#     name: "{{ runner_service_label }}"
+#     state: stopped
+#   ignore_errors: true
+#
+# - name: Unload daemon
+#   become: true
+#   community.general.launchd:
+#     name: "{{ runner_service_label }}"
+#     state: unloaded
+#   ignore_errors: true
 
 - name: Read the list of registered VMs
   become: true

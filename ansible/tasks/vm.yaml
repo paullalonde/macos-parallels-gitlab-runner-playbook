@@ -1,5 +1,15 @@
 ---
 
+- name: Retrieve user list
+  become: true
+  command: prlsrvctl user list --output name,def_vm_home --no-header
+  register: parallels_user_list
+  changed_when: false
+
+- name: Get default VM path
+  set_fact:
+    root_parallels_home: "{{ parallels_user_list.stdout | regex_search('root@\\.\\s+([^\\s]+)', '\\1') | first }}"
+
 # The cleanup code might seem overly complex, but it needs to handle two situations:
 #   1. The Gitlab executor creates its own Parallels VMs and VM templates.
 #      They aren't controlled by Ansible, but we need to clean them up, or else they'll just accumulate.
@@ -51,15 +61,6 @@
         state: absent
       loop: "{{ vm_non_executor_paths | default([]) }}"
 
-    - name: Retrieve user list
-      command: prlsrvctl user list --output name,def_vm_home --no-header
-      register: parallels_user_list
-      changed_when: false
-
-    - name: Get default VM path
-      set_fact:
-        root_parallels_home: "{{ parallels_user_list.stdout | regex_search('root@\\.\\s+([^\\s]+)', '\\1') | first }}"
-
     - name: Find non-registered VMs
       find:
         paths:
@@ -81,6 +82,14 @@
 - name: Create executor VM
   become: true
   block:
+    - name: Create Parallels vm home directory
+      file:
+        path: "{{ root_parallels_home }}"
+        state: directory
+        owner: root
+        group: admin
+        mode: 'u=rwx,g=,o='
+
     - name: Check if the VM file is already there
       stat:
         path: /var/gitlab-runner/vms/{{ gitlab_executor.vm_name }}.pvm

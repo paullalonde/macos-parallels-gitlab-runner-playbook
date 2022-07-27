@@ -1,0 +1,39 @@
+---
+
+- name: Stop daemon, if necessary
+  import_tasks: tasks/stop-daemon.yaml
+
+- name: Disable Sleep
+  include_tasks: tasks/no-sleep.yaml
+  when: disable_sleep
+
+- name: Disable Software Updates
+  include_role:
+    name: disable-software-updates
+  when: disable_software_updates
+
+- name: Install jq
+  become: true
+  get_url:
+    url: https://github.com/stedolan/jq/releases/download/{{ jq_version }}/jq-osx-amd64
+    dest: /usr/local/bin/jq
+    mode: 'u=rwx,g=rx,o=rx'
+
+- name: Install Pip Packages
+  become: true
+  ansible.builtin.pip:
+    name: "{{ item }}"
+  loop:
+    - python-gitlab==3.6.0
+
+- name: Install Gitlab runner
+  import_tasks: tasks/runner.yaml
+
+- name: Register Gitlab runner
+  import_tasks: tasks/registration.yaml
+
+- name: Create VM
+  import_tasks: tasks/vm.yaml
+
+- name: Start daemon
+  import_tasks: tasks/start-daemon.yaml

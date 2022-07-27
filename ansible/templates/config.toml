@@ -18,19 +18,17 @@ log_level = "debug"
   executor = "parallels"
 
   pre_clone_script = '''
-    echo "Preparing Keychain"
+    echo "Running pre-clone script"
 
-    KEYCHAIN="/Users/{{ gitlab_executor.username }}/Library/Keychains/{{ gitlab_executor.keychain_name }}"
-    KEYCHAIN_PASSWORD="{{ gitlab_executor.keychain_password | trim }}"
-
-    security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
-    security list-keychains -s "${KEYCHAIN}" "/Library/Keychains/System.keychain"
+    # This script is provided by the executor VM.
+    KEYCHAIN_PASSWORD="{{ gitlab_executor.keychain_password | trim }}" ~/bin/pre-clone.sh
   '''
 
   pre_build_script = '''
-    echo "Creating runner variables"
+    echo "Running pre-build script"
 
-    source ~/bin/setup-job-variables.sh
+    # This script is provided by the executor VM.
+    source ~/bin/pre-build.sh
   '''
 
   [runners.parallels]

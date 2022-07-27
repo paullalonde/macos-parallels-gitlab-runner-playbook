@@ -4,7 +4,7 @@
   <dict>
     <key>KeepAlive</key>
     <dict>
-      <key>SuccessfulExit</key><true/>
+      <key>SuccessfulExit</key><false/>
     </dict>
     <key>RunAtLoad</key><true/>
     <key>Disabled</key><false/>

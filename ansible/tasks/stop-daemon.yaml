@@ -1,22 +1,50 @@
 ---
 
-- name: Set escaped runner service line regex
-  set_fact:
-    runner_service_line_regex: "{{ '([-0-9]+)\\s+([0-9]+)\\s+' + (runner_service_label | regex_escape) }}"
-
-- name: Read the list of launchd services
-  become: true
-  command: launchctl list
-  register: launchctl_list
+- name: Is the daemon present?
+  command: launchctl print system/{{ runner_service_label }}
   changed_when: false
+  ignore_errors: true
+  register: launchctl_list_cmd
 
-- name: Find the runner service
+- name: Set runner_daemon_present
   set_fact:
-    runner_service_line: "{{ launchctl_list.stdout | default('') | regex_search(runner_service_line_regex) | default('') }}"
+    runner_daemon_present: "{{ launchctl_list_cmd.rc == 0}}"
+    runner_daemon_pid: 0
 
-- name: Stop daemon
+- name: Set runner_daemon_pid 1 / 2
+  set_fact:
+    runner_daemon_pid_raw: "{{ launchctl_list_cmd.stdout | regex_search('\\s+pid\\s+=\\s+([0-9]+)', '\\1') }}"
+  when: runner_daemon_present
+
+- name: Set runner_daemon_pid 2 / 2
+  set_fact:
+    runner_daemon_pid: "{{ runner_daemon_pid_raw | first }}"
+  when: runner_daemon_present and (runner_daemon_pid_raw is iterable) and (runner_daemon_pid_raw is sequence) and not (runner_daemon_pid_raw is string)
+
+- name: Disable daemon
   become: true
-  community.general.launchd:
-    name: "{{ runner_service_label }}"
-    state: stopped
-  when: runner_service_line != ""
+  command: launchctl disable system/{{ runner_service_label }}
+  when: runner_daemon_present
+
+- name: Tell daemon to perform a graceful shutdown
+  become: true
+  command: launchctl kill SIGQUIT system/{{ runner_service_label }}
+  when: runner_daemon_pid != 0
+
+- name: Wait for daemon to quit
+  shell:
+    cmd: |
+      while true; do
+        ps -p {{ runner_daemon_pid }}
+        PS_STATUS=$?
+        if [[ $PS_STATUS -ne 0 ]]; then
+          exit 0
+        fi
+        sleep 5
+      done
+  when: runner_daemon_pid != 0
+
+- name: Remove daemon
+  become: true
+  command: launchctl bootout system/{{ runner_service_label }}
+  when: runner_daemon_present
