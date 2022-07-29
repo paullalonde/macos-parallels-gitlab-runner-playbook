@@ -30,16 +30,13 @@
   set_fact:
     root_parallels_home: "{{ parallels_user_list.stdout | regex_search('root@\\.\\s+([^\\s]+)', '\\1') | first }}"
 
-- name: Unregister per-project runners
+- name: Unregister owned runner
   become: true
   gitlab_runner:
     description: "{{ gitlab_runner_description }}"
-    api_token: "{{ item.access_token | trim }}"
+    api_token: "{{ gitlab_runner_access_token | trim }}"
+    owned: true
     state: absent
-  loop: "{{ gitlab_macos_projects }}"
-  loop_control:
-    label: "{{ item.name }}"
-    index_var: index
   ignore_errors: true
 
 - name: Delete runner files & directories

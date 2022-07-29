@@ -14,66 +14,46 @@
 # Updating an existing runner does NOT return the same information as creating one. In particular, the runner token
 # is NOT returned from this call.
 
-
-- name: Register per-project runners
+- name: Register owned runner
   become: true
   block:
-    - name: Check if per-project runners are already registered
+    - name: Check if owned runner is already registered
       stat:
-        path: /etc/gitlab-runner/registration/project.{{ item.id }}.json
-      loop: "{{ gitlab_macos_projects }}"
-      loop_control:
-        label: "{{ item.name }}"
-        index_var: index
-      register: runner_registered
+        path: /etc/gitlab-runner/registration/owned.json
+      register: owned_runner_registered
 
-    - name: Register per-project runners, or update them
+    - name: Register owned runner, or update it
       gitlab_runner:
         description: "{{ gitlab_runner_description }}"
-        api_token: "{{ item.access_token | trim }}"
-        registration_token: "{{ item.registration_token | trim }}"
-        project: "{{ item.id }}"
+        api_token: "{{ gitlab_runner_access_token | trim }}"
+        registration_token: "{{ gitlab_runner_registration_token | trim }}"
         access_level: not_protected
         api_url: https://gitlab.com/
+        owned: true
         state: present
         active: true
         tag_list: "{{ gitlab_runner_tags + gitlab_runner_host_tags }}"
         run_untagged: false
         locked: false
-      loop: "{{ gitlab_macos_projects }}"
-      loop_control:
-        label: "{{ item.name }}"
-        index_var: index
-      register: runner_registration
+      register: owned_runner_registration
 
-    - name: Record per-project registrations (new runners only)
+    - name: Record new owned registration
       copy:
-        content: "{{ runner_registration.results[index].runner }}"
-        dest: /etc/gitlab-runner/registration/project.{{ item.id }}.json
+        content: "{{ owned_runner_registration.runner }}"
+        dest: /etc/gitlab-runner/registration/owned.json
         owner: root
         group: admin
         mode: 'u=rw,g=,o='
-      loop: "{{ gitlab_macos_projects }}"
-      loop_control:
-        label: "{{ item.name }}"
-        index_var: index
-      when: not runner_registered.results[index].stat.exists
+      when: not owned_runner_registered.stat.exists
 
-    - name: Read all per-project runner registrations, both new and existing
-      command: cat /etc/gitlab-runner/registration/project.{{ item.id }}.json
-      loop: "{{ gitlab_macos_projects }}"
-      loop_control:
-        label: "{{ item.name }}"
-      register: runner_per_project_registrations_cmd
+    - name: Read owned runner registration
+      command: cat /etc/gitlab-runner/registration/owned.json
+      register: runner_owned_registration_cmd
       changed_when: false
 
-    - name: Set per-project runner registrations
+    - name: Set owned runner registration
       set_fact:
-        runner_per_project_registrations: "{{ runner_per_project_registrations|default([]) + [runner_per_project_registrations_cmd.results[index].stdout | from_json] }}"
-      loop: "{{ gitlab_macos_projects }}"
-      loop_control:
-        label: "{{ item.name }}"
-        index_var: index
+        runner_owned_registration: "{{ runner_owned_registration_cmd.stdout | from_json }}"
 
 - name: Create runner config file
   become: true

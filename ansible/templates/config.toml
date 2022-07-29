@@ -8,11 +8,10 @@ log_level = "warn"
 # [session_server]
 #   session_timeout = 1800
 
-{% for item in gitlab_macos_projects %}
 [[runners]]
-  name = "{{ item.name }}"
+  name = "{{ gitlab_runner_description }}"
   url = "https://gitlab.com/"
-  token = "{{ runner_per_project_registrations[loop.index-1].token }}"
+  token = "{{ runner_owned_registration.token }}"
   builds_dir = "/Users/{{ gitlab_executor.username }}/builds"
   cache_dir = "/Users/{{ gitlab_executor.username }}/caches"
   executor = "parallels"
@@ -39,4 +38,3 @@ log_level = "warn"
     user = "{{ gitlab_executor.username }}"
     password = "{{ gitlab_executor.password | trim }}"
     disable_strict_host_key_checking = true
-{% endfor %}
