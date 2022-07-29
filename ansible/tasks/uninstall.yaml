@@ -3,47 +3,6 @@
 - name: Stop daemon, if necessary
   import_tasks: tasks/stop-daemon.yaml
 
-# - name: Is the daemon present?
-#   command: launchctl print system/{{ runner_service_label }}
-#   changed_when: false
-#   ignore_errors: true
-#   register: launchctl_list_cmd
-#
-# - set_fact:
-#     runner_daemon_present: "{{ launchctl_list_cmd.rc == 0}}"
-#
-# - debug:
-#     msg: "runner_daemon_present = {{ runner_daemon_present }}"
-#
-# - name: Disable daemon
-#   become: true
-#   command: launchctl disable system/{{ runner_service_label }}
-#   when: runner_daemon_present
-#
-# - name: Tell daemon to perform a graceful shutdown
-#   become: true
-#   command: launchctl kill SIGQUIT system/{{ runner_service_label }}
-#   when: runner_daemon_present
-#
-# - name: Remove daemon
-#   become: true
-#   command: launchctl bootout system/{{ runner_service_label }}
-#   when: runner_daemon_present
-
-# - name: Stop daemon
-#   become: true
-#   community.general.launchd:
-#     name: "{{ runner_service_label }}"
-#     state: stopped
-#   ignore_errors: true
-#
-# - name: Unload daemon
-#   become: true
-#   community.general.launchd:
-#     name: "{{ runner_service_label }}"
-#     state: unloaded
-#   ignore_errors: true
-
 - name: Read the list of registered VMs
   become: true
   command: prlctl list --all --output name --no-header
@@ -76,19 +35,12 @@
   gitlab_runner:
     description: "{{ gitlab_runner_description }}"
     api_token: "{{ item.access_token | trim }}"
-    registration_token: "{{ item.registration_token | trim }}"
-    project: "{{ item.id }}"
-    access_level: not_protected
-    api_url: https://gitlab.com/
     state: absent
-    active: true
-    tag_list: "{{ runner_tags }}"
-    run_untagged: false
-    locked: false
   loop: "{{ gitlab_macos_projects }}"
   loop_control:
     label: "{{ item.name }}"
     index_var: index
+  ignore_errors: true
 
 - name: Delete runner files & directories
   become: true
@@ -96,9 +48,9 @@
     dest: "{{ item }}"
     state: absent
   loop:
-    - /Library/LaunchDaemons/{{ runner_service_label }}.plist
     - /etc/gitlab-runner
     - /usr/local/bin/gitlab-runner
     - /var/gitlab-runner
     - /var/log/gitlab-runner
+    - "{{ runner_daemon_config_path }}"
     - "{{ root_parallels_home }}"

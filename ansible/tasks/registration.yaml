@@ -1,5 +1,20 @@
 ---
 
+# Create or update project runners. The logic is different depending on whether we are creating a
+# new runner or updating an existing one. We detect new registrations by the absence of a registration file at
+# /etc/gitlab-runner/registration/project.<project-id>.json
+#
+# ** New Runners **
+#
+# Creating a new runner returns output containing the runner token, which is required later when constructing
+# the config.toml file. The output is saved in a per-project registration file at /etc/gitlab-runner/registration/project.<project-id>.json.
+#
+# ** Existing Runners **
+#
+# Updating an existing runner does NOT return the same information as creating one. In particular, the runner token
+# is NOT returned from this call.
+
+
 - name: Register per-project runners
   become: true
   block:
@@ -12,7 +27,7 @@
         index_var: index
       register: runner_registered
 
-    - name: Register per-project runners
+    - name: Register per-project runners, or update them
       gitlab_runner:
         description: "{{ gitlab_runner_description }}"
         api_token: "{{ item.access_token | trim }}"
@@ -22,17 +37,16 @@
         api_url: https://gitlab.com/
         state: present
         active: true
-        tag_list: "{{ runner_tags }}"
+        tag_list: "{{ gitlab_runner_tags + gitlab_runner_host_tags }}"
         run_untagged: false
         locked: false
       loop: "{{ gitlab_macos_projects }}"
       loop_control:
         label: "{{ item.name }}"
         index_var: index
-      when: not runner_registered.results[index].stat.exists
       register: runner_registration
 
-    - name: Record per-project runner registrations
+    - name: Record per-project registrations (new runners only)
       copy:
         content: "{{ runner_registration.results[index].runner }}"
         dest: /etc/gitlab-runner/registration/project.{{ item.id }}.json
@@ -45,16 +59,21 @@
         index_var: index
       when: not runner_registered.results[index].stat.exists
 
-    - name: Read per-project runner registrations
-      shell:
-        cmd: jq --slurp '.' project.*.json
-        chdir: /etc/gitlab-runner/registration
-      register: runner_per_project_registrations_raw
+    - name: Read all per-project runner registrations, both new and existing
+      command: cat /etc/gitlab-runner/registration/project.{{ item.id }}.json
+      loop: "{{ gitlab_macos_projects }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: runner_per_project_registrations_cmd
       changed_when: false
 
-    - name: Set runner_per_project_registrations
+    - name: Set per-project runner registrations
       set_fact:
-        runner_per_project_registrations: "{{ runner_per_project_registrations_raw.stdout | from_json }}"
+        runner_per_project_registrations: "{{ runner_per_project_registrations|default([]) + [runner_per_project_registrations_cmd.results[index].stdout | from_json] }}"
+      loop: "{{ gitlab_macos_projects }}"
+      loop_control:
+        label: "{{ item.name }}"
+        index_var: index
 
 - name: Create runner config file
   become: true

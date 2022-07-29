@@ -4,6 +4,8 @@ disable_sleep: false
 disable_software_updates: false
 
 gitlab_runner_description: Paul's Desktop (Maskirovka)
+gitlab_runner_host_tags:
+  - macos-catalina
 
 gitlab_executor:
   vm_name: macos-catalina-golang-executor

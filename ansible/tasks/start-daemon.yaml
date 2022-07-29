@@ -1,9 +1,5 @@
 ---
 
-- name: Set daemon config file path
-  set_fact:
-    runner_daemon_config_path: /Library/LaunchDaemons/{{ runner_service_label }}.plist
-
 - name: Create daemon config file
   become: true
   template:
@@ -15,7 +11,7 @@
 
 - name: Enable daemon
   become: true
-  command: launchctl enable system/{{ runner_service_label }}
+  command: launchctl enable system/{{ gitlab_runner_daemon_label }}
 
 - name: Start Daemon
   become: true

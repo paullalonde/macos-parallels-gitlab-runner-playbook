@@ -1,7 +1,7 @@
 ---
 
 - name: Is the daemon present?
-  command: launchctl print system/{{ runner_service_label }}
+  command: launchctl print system/{{ gitlab_runner_daemon_label }}
   changed_when: false
   ignore_errors: true
   register: launchctl_list_cmd
@@ -23,12 +23,12 @@
 
 - name: Disable daemon
   become: true
-  command: launchctl disable system/{{ runner_service_label }}
+  command: launchctl disable system/{{ gitlab_runner_daemon_label }}
   when: runner_daemon_present
 
 - name: Tell daemon to perform a graceful shutdown
   become: true
-  command: launchctl kill SIGQUIT system/{{ runner_service_label }}
+  command: launchctl kill SIGQUIT system/{{ gitlab_runner_daemon_label }}
   when: runner_daemon_pid != 0
 
 - name: Wait for daemon to quit
@@ -51,5 +51,5 @@
 
 - name: Remove daemon
   become: true
-  command: launchctl bootout system/{{ runner_service_label }}
+  command: launchctl bootout system/{{ gitlab_runner_daemon_label }}
   when: runner_daemon_present

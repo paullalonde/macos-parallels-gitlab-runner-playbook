@@ -9,7 +9,7 @@
     <key>RunAtLoad</key><true/>
     <key>Disabled</key><false/>
     <key>Label</key>
-    <string>{{ runner_service_label }}</string>
+    <string>{{ gitlab_runner_daemon_label }}</string>
     <key>ProgramArguments</key>
     <array>
       <string>/usr/local/bin/gitlab-runner</string>

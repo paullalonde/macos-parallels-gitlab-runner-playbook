@@ -5,12 +5,15 @@ ansible_python_interpreter: auto_silent
 disable_sleep: true
 disable_software_updates: true
 
-runner_service_label: ca.paullalonde.macos-gitlab-runner-golang
-runner_tags:
+gitlab_runner_daemon_label: ca.paullalonde.macos-gitlab-runner-golang
+gitlab_runner_tags:
   - macos-golang
+gitlab_runner_host_tags: []
 
+# Gitlab runner software
 gitlab_runner_version: "15.1.0"
 gitlab_runner_hash: 96862945d4d1b5f9c16f36ffcf00630a23f49fbddda5dce91ecc29c4077729fd # See https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/index.html
+
 gitlab_runner_restart_delay: 37
 
 gitlab_macos_projects:

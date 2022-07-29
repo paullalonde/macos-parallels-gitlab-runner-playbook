@@ -3,6 +3,10 @@
   environment:
     PATH: /usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
   tasks:
+    - name: Set daemon config file path
+      set_fact:
+        runner_daemon_config_path: /Library/LaunchDaemons/{{ gitlab_runner_daemon_label }}.plist
+    
     - name: Install
       include_tasks: tasks/install.yaml
       when: not uninstall_runner

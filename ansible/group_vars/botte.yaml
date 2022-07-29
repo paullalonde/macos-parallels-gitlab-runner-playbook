@@ -1,6 +1,8 @@
 ---
 
 gitlab_runner_description: Paul's Mac Mini (Botte)
+gitlab_runner_host_tags:
+  - macos-catalina
 
 gitlab_executor:
   vm_name: macos-catalina-golang-executor
