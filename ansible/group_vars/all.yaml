@@ -38,5 +38,3 @@ vm_base_url: http://192.168.71.161:8000/virtual-machines/parallels
 
 force_vm_update: false
 uninstall_runner: false
-
-jq_version: "jq-1.5"

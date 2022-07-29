@@ -12,13 +12,6 @@
     name: disable-software-updates
   when: disable_software_updates
 
-- name: Install jq
-  become: true
-  get_url:
-    url: https://github.com/stedolan/jq/releases/download/{{ jq_version }}/jq-osx-amd64
-    dest: /usr/local/bin/jq
-    mode: 'u=rwx,g=rx,o=rx'
-
 - name: Install Pip Packages
   become: true
   ansible.builtin.pip:
