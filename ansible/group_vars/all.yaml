@@ -12,8 +12,8 @@ gitlab_runner_tags:
 gitlab_runner_host_tags: []
 
 # Gitlab runner software
-gitlab_runner_version: "15.1.0"
-gitlab_runner_hash: 96862945d4d1b5f9c16f36ffcf00630a23f49fbddda5dce91ecc29c4077729fd # See https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/index.html
+gitlab_runner_version: "15.2.1"
+gitlab_runner_hash: a1315aff96997c1ac9e84ad38617cfba7d1a8f628920f5a94884c168efb7fb6b # See https://gitlab-runner-downloads.s3.amazonaws.com/v{{ gitlab_runner_version }}/index.html
 
 gitlab_runner_access_token: !vault |
   $ANSIBLE_VAULT;1.2;AES256;gitlab
