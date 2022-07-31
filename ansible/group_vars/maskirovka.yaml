@@ -9,7 +9,7 @@ gitlab_runner_host_tags:
 
 gitlab_executor:
   vm_name: macos-catalina-golang-executor
-  vm_checksum: 0a15cc5cfddebea1c9462ba5a29b8ed27281ea589914e3b7f5b820f20cb9045d
+  vm_checksum: 58db7076f93408f2b458b7c827e55ebcefdf1e5d4a4ebac62de6115a4f1d2ee5
   username: gitlab-executor
   password: !vault |
     $ANSIBLE_VAULT;1.2;AES256;maskirovka

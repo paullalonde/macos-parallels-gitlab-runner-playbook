@@ -3,7 +3,7 @@
 # Global
 concurrent = 1
 check_interval = 15
-log_level = "warn"
+log_level = "{{ gitlab_runner_log_level }}"
 
 # [session_server]
 #   session_timeout = 1800

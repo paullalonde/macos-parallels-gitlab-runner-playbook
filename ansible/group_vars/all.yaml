@@ -10,6 +10,7 @@ gitlab_runner_daemon_label: ca.paullalonde.macos-gitlab-runner-golang
 gitlab_runner_tags:
   - macos-golang
 gitlab_runner_host_tags: []
+gitlab_runner_log_level: warn
 
 # Gitlab runner software
 gitlab_runner_version: "15.2.1"
